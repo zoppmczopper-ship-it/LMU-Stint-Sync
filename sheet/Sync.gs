@@ -7,7 +7,7 @@
  *  - Einrichtung: Menü „LMU Sync“ → „Einrichten / Web-App bereitstellen“
  */
 
-var SYNC_VERSION = '3.5';
+var SYNC_VERSION = '3.6';
 var SYNC_TZ = 'Europe/Vienna';
 
 var SYNC_SHEETS = {
@@ -2156,7 +2156,8 @@ function mapTraces_(rows) {
 }
 
 /* ======================= Updates (Admin → „Update übernehmen“) ======================= */
-// Neue Versionen liegen auf GitHub (dist/sheet/release.json), ersatzweise liefert sie die Web-App der Vorlage (…/exec?api=release). Beim Klick auf „Update übernehmen“
+// Neue Versionen liegen auf GitHub (dist/sheet/release.json). Die alte Vorlage-Web-App (…/exec?api=release) wird nur noch
+// von Sheets bis 3.4 gefragt, um einmalig auf eine Version mit GitHub-Updates zu kommen. Beim Klick auf „Update übernehmen“
 // wird der Code im versteckten Tab „LMU-Update“ gespeichert; zz_Update.gs lädt ihn bei jedem Aufruf.
 // Kein erneutes Bereitstellen nötig. „Zurück“ stellt die vorige Version wieder her.
 
@@ -2215,7 +2216,7 @@ function lmuReleaseLocal_() {
   return JSON.parse(Utilities.ungzip(blob).getDataAsString('UTF-8'));
 }
 
-// Updates kommen von GitHub (öffentliches Repo, Ordner dist/sheet); fällt GitHub aus, von der Vorlage.
+// Updates kommen ausschließlich von GitHub (öffentliches Repo, Ordner dist/sheet).
 var LMU_GITHUB_RAW = 'https://raw.githubusercontent.com/zoppmczopper-ship-it/LMU-Stint-Sync/main/dist/sheet/';
 
 function lmuReleaseUrl_() {
@@ -2223,7 +2224,7 @@ function lmuReleaseUrl_() {
 }
 function lmuFetchRelease_(meta) {
   const own = PropertiesService.getScriptProperties().getProperty('lmuReleaseUrl');
-  const srcs = own ? [own] : [LMU_GITHUB_RAW, LMU_RELEASE_URL];
+  const srcs = own ? [own] : [LMU_GITHUB_RAW];
   let lastErr = null;
   for (const src of srcs) {
     try {
@@ -2235,7 +2236,7 @@ function lmuFetchRelease_(meta) {
       try { b = JSON.parse(r.getContentText('UTF-8')); } catch (e) { throw new Error('Antwort des Update-Servers ist ungültig'); }
       if (b.err) throw new Error(b.err);
       if (!b.v || (!meta && (!b.server || !b.html))) throw new Error('Update-Datei unvollständig');
-      b.src = /github/.test(src) ? 'GitHub' : 'Vorlage';
+      b.src = /github/.test(src) ? 'GitHub' : src;
       return b;
     } catch (e) { lastErr = e; }
   }
