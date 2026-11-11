@@ -69,6 +69,15 @@
 </div>
 <div class="muted" id="links" style="margin-top:6px"></div>
 
+<h2>Fahrer einladen</h2>
+<div class="muted">Schick neuen Fahrern diese Einladung – mit Link zur Einladungsseite (exe-Download von GitHub, Team-Link zum Kopieren bzw. direkt in die exe übernehmen).</div>
+<textarea id="invText" rows="9" style="width:100%;box-sizing:border-box;font:12px/1.4 Roboto,Arial,sans-serif;margin-top:6px;border:1px solid #dadce0;border-radius:4px;padding:6px"></textarea>
+<div class="btns">
+  <button class="primary" id="invWa">Per WhatsApp teilen</button>
+  <button id="invCopy">Text kopieren</button>
+  <button id="invOpen">Einladungsseite ansehen</button>
+</div>
+
 <h2>Updates</h2>
 <div class="muted" id="updInfo">prüfe …</div>
 <div class="btns" id="updBtns"></div>
@@ -121,6 +130,7 @@ function render(d) {
   $('discord').value = s['Discord-Webhook'] || '';
   $('discordLive').value = (s['Discord-Live-Nachricht'] || 'ja').toLowerCase();
   $('url').textContent = d.url || 'noch nicht bereitgestellt – „Einrichtungs-Anleitung“ klicken';
+  if (!INV_EDITED) $('invText').value = inviteText(d);
   $('links').innerHTML = d.url
     ? '<a href="' + esc(d.url) + '">Plan-Dashboard</a> · <a href="' + esc(d.url) + '?view=live">Live-Dashboard</a> · <a href="' + esc(d.url) + '?view=box">Mechaniker-Board</a> · <a href="' + esc(d.url) + '?view=map">Strecken-Analyse</a>'
     : '';
@@ -162,6 +172,30 @@ $('events').addEventListener('click', function (e) {
 });
 $('newEvent').onclick = function () { call('showEventDialog', []); };
 $('deploy').onclick = function () { call('setupAndDeploy', []); };
+var INV_EDITED = false, GH = 'https:' + '//github.com/zoppmczopper-ship-it/LMU-Stint-Sync';
+function inviteText(d) {
+  if (!d.url) return 'Erst die Web-App bereitstellen (Abschnitt „Web-App“), dann gibt es hier die Einladung.';
+  return '🏁 Einladung ins LMU-Team „' + (d.team || 'Team') + '“\n\n' +
+    'Alles Nötige auf einer Seite (Download + Team-Link):\n' + d.url + '?view=join\n\n' +
+    'Kurzfassung:\n' +
+    '1) exe laden: ' + GH + '/releases/latest/download/lmu-stint-sync.exe\n' +
+    '2) In LMU: Einstellungen → Gameplay → „Enable Plugins“ an, LMU neu starten\n' +
+    '3) exe starten → „Team hinzufügen“ → diesen Link einfügen:\n' + d.url + '\n\n' +
+    'Danach gebe ich dich frei.';
+}
+function copyText(txt, ok) {
+  var t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select();
+  try { document.execCommand('copy'); msg(ok, true); } catch (e) { msg('Bitte manuell kopieren', false); }
+  t.remove();
+}
+$('invText').oninput = function () { INV_EDITED = true; };
+$('invCopy').onclick = function () { copyText($('invText').value, 'Einladung kopiert'); };
+$('invWa').onclick = function () {
+  if (!D || !D.url) return msg('Erst die Web-App bereitstellen', false);
+  window.open('https:' + '//wa.me/?text=' + encodeURIComponent($('invText').value), '_blank');
+};
+$('invOpen').onclick = function () { if (D && D.url) window.open(D.url + '?view=join', '_blank'); };
+
 $('copy').onclick = function () {
   if (!D || !D.url) return;
   var t = document.createElement('textarea'); t.value = D.url; document.body.appendChild(t); t.select();

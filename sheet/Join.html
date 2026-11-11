@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<base target="_blank">
+<meta charset="utf-8">
+<style>
+  :root{--bg:#0e1116;--card:#171b22;--line:#262c36;--text:#e8ecf2;--mute:#8b95a5;--accent:#ff5a1f;--ok:#2fbf71}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+  h1{font-size:21px;margin:4px 0 2px}
+  .sub{color:var(--mute);margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:13px;margin-right:8px}
+  h2{font-size:16px;margin:0 0 8px;display:flex;align-items:center}
+  p{margin:6px 0;color:#c9d1dc}
+  a.btn,button{display:inline-block;font:inherit;font-weight:600;text-decoration:none;border:0;border-radius:10px;padding:10px 14px;margin:6px 6px 0 0;cursor:pointer;background:var(--accent);color:#fff}
+  a.btn.sec,button.sec{background:var(--line);color:var(--text)}
+  .url{word-break:break-all;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;background:#0b0e12;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:6px}
+  .small{font-size:13px;color:var(--mute)}
+  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ok);color:#06210f;font-weight:600;padding:8px 14px;border-radius:99px;display:none}
+</style>
+</head>
+<body>
+<main>
+  <div class="small">LMU Stint-Sync · Einladung</div>
+  <h1>🏁 Willkommen bei <span id="team"></span></h1>
+  <div class="sub">So bist du in drei Schritten im Team – Stints, Runden und Boxenstopps landen dann automatisch im Team-Sheet.</div>
+
+  <div class="card">
+    <h2><span class="n">1</span>Programm herunterladen (Windows)</h2>
+    <p>Die exe in einen eigenen Ordner legen und starten. Windows warnt evtl. („Der Computer wurde durch Windows geschützt“) → „Weitere Informationen“ → „Trotzdem ausführen“.</p>
+    <a class="btn" id="dl">⬇ lmu-stint-sync.exe laden</a>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span>In LMU einmalig Plugins einschalten</h2>
+    <p>Einstellungen → Gameplay → „Enable Plugins“ = AN, danach LMU neu starten.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">3</span>Team in der exe eintragen</h2>
+    <p>Läuft die exe schon (auf diesem PC)? Dann trägt dieser Knopf das Team direkt ein – danach nur noch „Hinzufügen“ klicken:</p>
+    <a class="btn" id="toExe">In der exe übernehmen</a>
+    <p class="small" style="margin-top:10px">Oder von Hand: im exe-Fenster unter „Team hinzufügen“ diesen Link einfügen:</p>
+    <div class="url" id="link"></div>
+    <button class="sec" id="copy" type="button">Link kopieren</button>
+  </div>
+
+  <div class="card">
+    <h2>Und dann?</h2>
+    <p>Der Team-Chef gibt dich frei – bis dahin wird alles, was du fährst, zwischengespeichert und nachgeschickt.</p>
+    <a class="btn sec" id="live">Live-Dashboard</a>
+    <a class="btn sec" id="doc">Anleitung</a>
+  </div>
+</main>
+<div id="toast"></div>
+<script>
+var API = <?!= JSON.stringify(apiUrl) ?>;
+var TEAM = <?!= JSON.stringify(team) ?>;
+var GH = 'https:' + '//github.com/zoppmczopper-ship-it/LMU-Stint-Sync';
+function $(id) { return document.getElementById(id); }
+$('team').textContent = TEAM || 'deinem Team';
+$('dl').href = GH + '/releases/latest/download/lmu-stint-sync.exe';
+$('doc').href = GH + '/blob/main/docs/ANLEITUNG.md';
+$('link').textContent = API;
+$('live').href = API + '?view=live';
+$('toExe').href = 'http:' + '//127.0.0.1:8765/?sheet=' + encodeURIComponent(API) + '&team=' + encodeURIComponent(TEAM || '');
+function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; setTimeout(function () { e.style.display = 'none'; }, 1800); }
+$('copy').onclick = function () {
+  var done = function () { toast('Link kopiert'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(API).then(done, fallback); } else { fallback(); }
+  function fallback() { var t = document.createElement('textarea'); t.value = API; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('Bitte von Hand kopieren'); } t.remove(); }
+};
+</script>
+</body>
+</html>

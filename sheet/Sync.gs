@@ -7,7 +7,7 @@
  *  - Einrichtung: Menü „LMU Sync“ → „Einrichten / Web-App bereitstellen“
  */
 
-var SYNC_VERSION = '3.6';
+var SYNC_VERSION = '3.7';
 var SYNC_TZ = 'Europe/Vienna';
 
 var SYNC_SHEETS = {
@@ -739,7 +739,7 @@ function adminData() {
   const s = syncSettings_();
   const tabs = SpreadsheetApp.getActiveSpreadsheet().getSheets().map(x => x.getName())
     .filter(n => Object.keys(SYNC_SHEETS).indexOf(n) === -1);
-  return { drivers: drivers, settings: s, tabs: tabs, events: eventList_(), url: webAppUrl_(), plan: planState_(), version: SYNC_VERSION };
+  return { drivers: drivers, settings: s, tabs: tabs, events: eventList_(), url: webAppUrl_(), plan: planState_(), version: SYNC_VERSION, team: SpreadsheetApp.getActiveSpreadsheet().getName() };
 }
 
 function adminSetStatus(device, status) {
@@ -1491,6 +1491,14 @@ function syncDoGet_(e) {
     const m = lmuTpl_('Map');
     m.apiUrl = ScriptApp.getService().getUrl();
     return m.evaluate().setTitle('LMU Strecken-Analyse')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+  }
+  if (p.view === 'join') {
+    // Einladungsseite für neue Fahrer: Download der exe (GitHub) + Team-Link
+    const j = lmuTpl_('Join');
+    j.apiUrl = ScriptApp.getService().getUrl();
+    j.team = SpreadsheetApp.getActiveSpreadsheet().getName();
+    return j.evaluate().setTitle('Einladung · LMU Stint-Sync')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
   }
   if (p.view === 'box') {
