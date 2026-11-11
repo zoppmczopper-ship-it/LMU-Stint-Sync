@@ -1,5 +1,12 @@
 [
  {
+  "v": "3.6",
+  "date": "11.11.2026",
+  "notes": [
+   "Updates kommen nur noch von GitHub – das Sheet greift für Updates nicht mehr auf die Vorlage zu"
+  ]
+ },
+ {
   "v": "3.5",
   "date": "11.11.2026",
   "notes": [
