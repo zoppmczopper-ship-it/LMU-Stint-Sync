@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_blank">
+<meta charset="utf-8">
+<style>
+  body{font:13px/1.45 Roboto,Arial,sans-serif;color:#202124;margin:0;padding:2px 6px}
+  label{display:block;font-size:12px;color:#5f6368;margin:9px 0 2px}
+  input,select{width:100%;box-sizing:border-box;font:inherit;padding:5px 6px;border:1px solid #dadce0;border-radius:4px}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  .muted{color:#5f6368;font-size:12px}
+  .drv{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid #e0e0e0;border-radius:6px;margin:4px 0;background:#fff}
+  .drv input[type=checkbox]{width:auto}
+  .drv span{flex:1}
+  .drv button{padding:0 7px;font-size:13px}
+  button{font:inherit;border:1px solid #dadce0;background:#fff;border-radius:4px;padding:5px 12px;cursor:pointer}
+  button.primary{background:#1a73e8;border-color:#1a73e8;color:#fff}
+  button:disabled{opacity:.5;cursor:default}
+  .box{background:#f1f3f4;border-radius:6px;padding:8px 10px;margin-top:10px}
+  .err{color:#c5221f}
+  #preview{white-space:pre-line}
+  .rc{border:1px solid #dadce0;border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#fafafa}
+  .rc summary{cursor:pointer;font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:4px 10px;margin:6px 0 2px}
+  .chips label{display:flex;align-items:center;gap:4px;margin:0;color:#202124;font-size:12px}
+  .chips input{width:auto;margin:0}
+  .grp{font-size:11px;color:#5f6368;font-weight:600;text-transform:uppercase;margin-top:6px}
+  #rcList{max-height:190px;overflow:auto;margin-top:6px;border-top:1px solid #e0e0e0}
+  .it{padding:5px 4px;border-bottom:1px solid #eee;cursor:pointer}
+  .it:hover{background:#e8f0fe}
+  .it b{font-weight:600}
+  .lv{display:inline-block;font-size:10px;font-weight:700;padding:0 6px;border-radius:99px;margin-left:4px;text-transform:uppercase;vertical-align:1px}
+  .lv.beginner{background:#e6f4ea;color:#137333}.lv.intermediate{background:#fef7e0;color:#b06000}.lv.advanced{background:#fce8e6;color:#c5221f}
+  .lv.offen{background:#e8eaed;color:#3c4043}.lv.bronze{background:#f3e0cf;color:#8a4b14}.lv.silver{background:#e8eaed;color:#5f6368}
+  .lv.gold{background:#fdf0b8;color:#8a6d00}.lv.platinum{background:#e0f2f1;color:#00695c}
+  .team{font-size:10px;color:#1a73e8;font-weight:700;margin-left:4px}
+  .dlc{display:inline-block;font-size:10px;font-weight:600;padding:0 5px;border-radius:4px;background:#ede7f6;color:#5e35b1;margin-left:4px}
+  .dlc.miss{background:#fce8e6;color:#c5221f}
+  .it.off{opacity:.5}
+  .sg{border:1px solid #dadce0;border-radius:8px;padding:6px 8px;margin-top:6px;background:#fafafa;font-size:12px}
+  .sg .h{font-weight:600;margin:4px 0 2px}
+  .chip{display:inline-block;border:1px solid #c6dafc;background:#e8f0fe;color:#174ea6;border-radius:99px;padding:1px 8px;margin:2px 3px 2px 0;cursor:pointer;font-size:12px}
+  .chip:hover{background:#d2e3fc}
+</style>
+</head>
+<body>
+<details class="rc" id="rcBox" open>
+  <summary>Rennen aus Race Control übernehmen</summary>
+  <div class="grp">Daily Races (Stufe)</div>
+  <div class="chips" id="fDaily">
+    <label><input type="checkbox" value="beginner" checked>Beginner</label>
+    <label><input type="checkbox" value="intermediate" checked>Intermediate</label>
+    <label><input type="checkbox" value="advanced" checked>Advanced</label>
+  </div>
+  <div class="grp">Community-Events (Mindest-Rating)</div>
+  <div class="chips" id="fEvent">
+    <label><input type="checkbox" value="offen" checked>ohne Vorgabe</label>
+    <label><input type="checkbox" value="bronze" checked>Bronze</label>
+    <label><input type="checkbox" value="silver" checked>Silber</label>
+    <label><input type="checkbox" value="gold" checked>Gold</label>
+    <label><input type="checkbox" value="platinum" checked>Platin</label>
+  </div>
+  <div class="grp">DLC – Strecken-Pakete, die ich habe</div>
+  <div class="chips" id="fDlc"><span class="muted">erscheinen nach dem Laden</span></div>
+  <div class="chips">
+    <label><input type="checkbox" id="fDlcOnly">nur Rennen ohne fehlende DLC</label>
+  </div>
+  <div class="chips">
+    <label><input type="checkbox" id="fTeam">nur Team-Events</label>
+    <label><input type="checkbox" id="fLong">nur ab 1 h</label>
+    <label><input type="checkbox" id="fHosted" checked>Hosted Races</label>
+  </div>
+  <div class="row" style="margin-top:4px">
+    <div><input id="rcSearch" placeholder="Suche: Name, Strecke, Veranstalter"></div>
+    <div style="flex:0 0 auto"><button id="rcLoad">Laden</button></div>
+  </div>
+  <div id="rcList" class="muted">Klick auf „Laden“ holt die geplanten Rennen von racecontrol.gg.</div>
+  <div class="row" style="margin-top:6px">
+    <div><input id="rcLink" placeholder="oder Event-Link einfügen: racecontrol.gg/events/…"></div>
+    <div style="flex:0 0 auto"><button id="rcLinkBtn">Übernehmen</button></div>
+  </div>
+</details>
+
+<label>Name des Events (wird der Tab-Name)</label>
+<input id="name" placeholder="z. B. 24h Spa 2026">
+<div class="row">
+  <div><label>Event-Start (Wiener Zeit) <span class="muted">– Beginn Training</span></label><input id="start" type="datetime-local"></div>
+  <div><label>Renndauer (h:mm)</label><input id="duration" value="24:00"></div>
+</div>
+<div class="row">
+  <div><label>Training (min)</label><input id="practice" type="number" min="0" value="0"></div>
+  <div><label>Qualifying (min)</label><input id="quali" type="number" min="0" value="0"></div>
+  <div><label>Pause bis Rennstart (min)</label><input id="gap" type="number" min="0" value="0"></div>
+</div>
+<div class="muted">Alles 0 = Event-Start ist der Rennstart.</div>
+<div class="row">
+  <div><label>Strecke</label><input id="track" list="trackList" placeholder="z. B. Spa"><datalist id="trackList"></datalist></div>
+  <div style="flex:0 0 110px"><label>Klasse</label><select id="cls"><option value="gt3">GT3</option><option value="hypercar">Hypercar</option><option value="lmp2">LMP2</option><option value="lmp3">LMP3</option></select></div>
+  <div style="flex:0 0 110px"><label>Setup</label><select id="setup"><option value="open">offen</option><option value="fixed">fest (Fixed)</option></select></div>
+</div>
+<div class="row" style="margin-top:6px">
+  <div><button id="sugBtn" style="width:100%">Rundenzeit &amp; Verbrauch vorschlagen</button></div>
+</div>
+<div id="sugg"></div>
+<div class="row">
+  <div><label>Rundenzeit (m:ss)</label><input id="lap" value="3:45"></div>
+  <div><label>Runden pro Stint</label><input id="lapsPerStint" type="number" min="1" value="10"></div>
+  <div><label>Boxenstopp (m:ss)</label><input id="pit" value="1:30"></div>
+</div>
+
+<div class="row">
+  <div><label>Verbrauch pro Runde</label><input id="cons" placeholder="leer = keine Tankempfehlung"></div>
+  <div style="flex:0 0 120px"><label>Einheit</label><select id="consUnit"><option value="ve">VE %</option><option value="l">Liter</option></select></div>
+  <div style="flex:0 0 110px"><label>Reserve (Runden)</label><input id="reserve" type="number" min="0" step="0.5" value="1"></div>
+</div>
+
+<label>Fahrer-Reihenfolge <span class="muted">(Häkchen = fährt mit, Pfeile = Reihenfolge)</span></label>
+<div id="drivers"></div>
+<div class="row" style="margin-top:4px">
+  <div><input id="extra" placeholder="weiteren Namen hinzufügen (z. B. noch nicht angemeldet)"></div>
+  <div style="flex:0 0 auto"><button id="add">+</button></div>
+</div>
+<div class="row">
+  <div><label>Stints am Stück pro Fahrer</label><input id="per" type="number" min="1" value="2"></div>
+  <div><label>Danach</label><select id="activate"><option value="1">als aktives Event setzen</option><option value="0">nur anlegen</option></select></div>
+</div>
+
+<div class="box"><div id="preview" class="muted"></div></div>
+<div style="margin-top:12px;display:flex;gap:6px">
+  <button class="primary" id="create">Event anlegen</button>
+  <button onclick="google.script.host.close()">Abbrechen</button>
+</div>
+<div id="msg" style="margin-top:8px"></div>
+
+<script>
+var D = <?!= data ?>;
+var list = D.drivers.map(function (n) { return { name: n, on: true }; });
+function $(i) { return document.getElementById(i); }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function sec(s, unit) {
+  var p = String(s || '').trim().replace(',', '.').split(':').map(Number);
+  if (p.some(isNaN) || !p.length) return 0;
+  if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2];
+  if (p.length === 2) return unit === 'h' ? p[0] * 3600 + p[1] * 60 : p[0] * 60 + p[1];
+  return unit === 'h' ? p[0] * 3600 : p[0];
+}
+function hm(s) { s = Math.round(s); return Math.floor(s / 3600) + ':' + ('0' + Math.floor(s % 3600 / 60)).slice(-2); }
+
+function renderDrivers() {
+  if (!list.length) {
+    $('drivers').innerHTML = '<div class="muted">Noch keine freigegebenen Fahrer. Namen unten hinzufügen oder später im Tab per Dropdown eintragen.</div>';
+  } else {
+    $('drivers').innerHTML = list.map(function (d, i) {
+      return '<div class="drv"><input type="checkbox" data-i="' + i + '"' + (d.on ? ' checked' : '') + '><span>' + esc(d.name) + '</span>' +
+        '<button data-up="' + i + '">↑</button><button data-down="' + i + '">↓</button></div>';
+    }).join('');
+  }
+  preview();
+}
+$('drivers').addEventListener('click', function (e) {
+  var t = e.target, i;
+  if (t.hasAttribute('data-i')) { list[+t.getAttribute('data-i')].on = t.checked; preview(); return; }
+  if (t.hasAttribute('data-up')) { i = +t.getAttribute('data-up'); if (i > 0) list.splice(i - 1, 0, list.splice(i, 1)[0]); renderDrivers(); }
+  if (t.hasAttribute('data-down')) { i = +t.getAttribute('data-down'); if (i < list.length - 1) list.splice(i + 1, 0, list.splice(i, 1)[0]); renderDrivers(); }
+});
+$('add').onclick = function () {
+  var n = $('extra').value.trim();
+  if (n && !list.some(function (d) { return d.name === n; })) list.push({ name: n, on: true });
+  $('extra').value = ''; renderDrivers();
+};
+$('extra').onkeydown = function (e) { if (e.key === 'Enter') $('add').click(); };
+
+function opts() {
+  return {
+    name: $('name').value, start: $('start').value, duration: $('duration').value, lap: $('lap').value,
+    lapsPerStint: $('lapsPerStint').value, pit: $('pit').value, stintsPerDriver: $('per').value,
+    drivers: list.filter(function (d) { return d.on; }).map(function (d) { return d.name; }),
+    activate: $('activate').value === '1', rcUrl: rcUrl,
+    cons: $('cons').value, consUnit: $('consUnit').value, reserve: $('reserve').value,
+    practice: $('practice').value, quali: $('quali').value, gap: $('gap').value
+  };
+}
+function preview() {
+  var o = opts(), dur = sec(o.duration, 'h'), lap = sec(o.lap, 's'), pit = sec(o.pit, 's'), n = +o.lapsPerStint || 1;
+  if (!dur || !lap) { $('preview').textContent = 'Renndauer und Rundenzeit angeben.'; return; }
+  var st = n * lap, stints = Math.ceil(dur / (st + pit));
+  var pM = Math.max(0, +o.practice || 0), qM = Math.max(0, +o.quali || 0), gM = Math.max(0, +o.gap || 0), sched = '';
+  var t0 = o.start ? new Date(o.start) : null;
+  function hhmm(m) { var d = new Date(t0.getTime() + m * 60000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  if (t0 && !isNaN(t0) && pM + qM + gM > 0) {
+    var parts = [];
+    if (pM) parts.push('Training ' + hhmm(0) + '–' + hhmm(pM));
+    if (qM) parts.push('Qualifying ' + hhmm(pM) + '–' + hhmm(pM + qM));
+    parts.push('Rennstart ' + hhmm(pM + qM + gM));
+    parts.push('Rennende ' + hhmm(pM + qM + gM + dur / 60));
+    sched = 'Ablauf: ' + parts.join(' · ') + '\n';
+  }
+  var t = sched + stints + ' Stints à ' + n + ' Runden (' + hm(st) + ' h Fahrzeit + ' + Math.floor(pit / 60) + ':' + ('0' + pit % 60).slice(-2) + ' min Stopp)';
+  var drive = Math.max(0, dur - (stints - 1) * pit), total = Math.ceil(drive / lap), lastL = total - (stints - 1) * n;
+  t += '\nGesamt: ca. ' + total + ' Runden in ' + hm(dur) + ' h (' + (stints - 1) + ' Boxenstopps, ' + hm(drive) + ' h Fahrzeit)' +
+    (lastL > 0 && lastL !== n ? ' · letzter Stint ca. ' + lastL + ' Runden' : '');
+  if (o.drivers.length) {
+    var per = Math.max(1, +o.stintsPerDriver || 1), cnt = {};
+    for (var i = 0; i < stints; i++) { var d = o.drivers[Math.floor(i / per) % o.drivers.length]; cnt[d] = (cnt[d] || 0) + 1; }
+    t += '\n' + o.drivers.map(function (d) { return d + ': ' + (cnt[d] || 0) + ' Stints (~' + hm((cnt[d] || 0) * st) + ' h)'; }).join(' · ');
+  } else t += '\nFahrer bleiben leer – später per Dropdown eintragen.';
+  var c = parseFloat(String($('cons').value).replace(',', '.')), rs = parseFloat(String($('reserve').value).replace(',', '.')) || 0;
+  if (c > 0) {
+    var amt = (n + rs) * c, ve = $('consUnit').value === 've';
+    t += '\nTankempfehlung je Stint: ' + (ve ? Math.min(100, Math.round(amt)) + ' % VE' : amt.toFixed(1).replace('.', ',') + ' l') +
+      ' (' + n + ' + ' + rs + ' Rd Reserve)' + (ve && amt > 100 ? ' – mehr als ein voller Tank, Stint kürzen!' : '');
+  }
+  $('preview').textContent = t;
+}
+['duration', 'lap', 'pit', 'lapsPerStint', 'per', 'cons', 'reserve', 'practice', 'quali', 'gap', 'start'].forEach(function (i) { $(i).oninput = preview; });
+$('consUnit').onchange = preview;
+$('cls').onchange = function () { $('consUnit').value = /lmp2|lmp3/.test(this.value) ? 'l' : 've'; preview(); };
+
+/* ---------- Rundenzeit-Vorschlag ---------- */
+function mmss(sec) { var m = Math.floor(sec / 60), r = sec - m * 60; return m + ':' + ('0' + r.toFixed(1)).slice(-4); }
+function toSecLap(t) { var p = String(t).split(':'); return p.length === 2 ? (+p[0]) * 60 + parseFloat(p[1]) : parseFloat(t); }
+function guessClass(name) {
+  name = String(name || '');
+  if (/LMP3/i.test(name)) return 'lmp3';
+  if (/LMP2|ELMS/i.test(name)) return 'lmp2';
+  if (/GT3|GTE/i.test(name)) return 'gt3';
+  if (/Hyper|WEC|Prototype|LMH|LMDh/i.test(name)) return 'hypercar';
+  return '';
+}
+google.script.run.withSuccessHandler(function (l) {
+  $('trackList').innerHTML = (l || []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+}).adminLapTracks();
+$('sugBtn').onclick = function () {
+  var b = this;
+  if (!$('track').value.trim()) { $('sugg').innerHTML = '<div class="sg err">Bitte zuerst die Strecke angeben.</div>'; return; }
+  b.disabled = true; $('sugg').innerHTML = '<div class="sg muted">suche Rundenzeiten …</div>';
+  google.script.run.withSuccessHandler(function (r) {
+    b.disabled = false;
+    var h = '<div class="sg"><div class="muted">' + esc(r.cls) + ' · ' + esc(r.track) + '</div>';
+    if (r.own) {
+      h += '<div class="h">Eure eigene Pace (' + r.own.laps + ' saubere Runden)</div>';
+      h += '<span class="chip" data-lap="' + r.own.team + '">Team-Median ' + mmss(r.own.team) + '</span>';
+      r.own.drivers.forEach(function (d) { h += '<span class="chip" data-lap="' + d.median + '">' + esc(d.driver) + ' ' + mmss(d.median) + '</span>'; });
+      if (r.own.vePerLap || r.own.fuelPerLap) {
+        h += '<div class="h">Euer Verbrauch pro Runde</div>';
+        if (r.own.vePerLap) h += '<span class="chip" data-cons="' + r.own.vePerLap + '" data-unit="ve">' + String(r.own.vePerLap).replace('.', ',') + ' % VE</span>';
+        if (r.own.fuelPerLap) h += '<span class="chip" data-cons="' + r.own.fuelPerLap + '" data-unit="l">' + String(r.own.fuelPerLap).replace('.', ',') + ' l</span>';
+      }
+    } else h += '<div class="h">Eigene Pace</div><div class="muted">Noch keine eigenen Runden auf dieser Strecke in dieser Klasse.</div>';
+    if (r.bop) {
+      h += '<div class="h">Referenz BoP Tourism – ' + esc(r.bop.label) + ', ' + esc(r.bop.setup) + ' (' + r.bop.drivers + ' Fahrer)</div>';
+      var med = r.bop.med || {}, tiers = r.bop.tiers || {};
+      Object.keys(med).forEach(function (k) { h += '<span class="chip" data-lap="' + toSecLap(med[k]) + '">' + esc(k) + ' ' + esc(med[k]) + '</span>'; });
+      var tn = { ALIEN: 'Alien (Top 0,5 %)', GOLD: 'Gold (Top 10 %)', SILVER: 'Silber (Top 30 %)', BRONZE: 'Mittelfeld (Median)', ROOKIE: 'Rookie (Top 75 %)' };
+      if (Object.keys(tiers).length) h += '<br>';
+      ['GOLD', 'SILVER', 'BRONZE', 'ROOKIE'].forEach(function (k) { if (tiers[k]) h += '<span class="chip" data-lap="' + toSecLap(tiers[k]) + '">' + tn[k] + ' ' + esc(tiers[k]) + '</span>'; });
+      if (r.bop.quali) h += '<div class="muted">Nur Qualifying-Daten vorhanden – im Rennen eher 1–2 % langsamer.</div>';
+      h += '<div class="muted" style="margin-top:3px">Median = Dauerpace (die Hälfte der Runden ist schneller). <a href="' + esc(r.bopUrl) + '" target="_blank">Details</a></div>';
+    } else if (r.err) h += '<div class="h">Referenz BoP Tourism</div><div class="muted">' + esc(r.err) + '</div>';
+    h += '<div class="muted" style="margin-top:4px">Klick übernimmt den Wert.</div></div>';
+    $('sugg').innerHTML = h;
+  }).withFailureHandler(function (e) { b.disabled = false; $('sugg').innerHTML = '<div class="sg err">' + esc(e.message || e) + '</div>'; })
+    .adminLapSuggest({ track: $('track').value, cls: $('cls').value, setup: $('setup').value, durMin: Math.round(sec($('duration').value, 'h') / 60) });
+};
+$('sugg').addEventListener('click', function (e) {
+  var c = e.target.closest('.chip'); if (!c) return;
+  if (c.hasAttribute('data-lap')) { $('lap').value = mmss(parseFloat(c.getAttribute('data-lap'))); }
+  if (c.hasAttribute('data-cons')) { $('cons').value = String(c.getAttribute('data-cons')).replace('.', ','); $('consUnit').value = c.getAttribute('data-unit'); }
+  preview();
+});
+
+$('create').onclick = function () {
+  var b = this; b.disabled = true; $('msg').className = 'muted'; $('msg').textContent = 'lege an …';
+  google.script.run.withSuccessHandler(function (r) {
+    $('msg').className = ''; $('msg').textContent = '✓ „' + r.name + '“ angelegt (' + r.stints + ' Stints).';
+    setTimeout(function () { google.script.host.close(); }, 1500);
+  }).withFailureHandler(function (e) { b.disabled = false; $('msg').className = 'err'; $('msg').textContent = e.message || e; })
+    .adminCreateEvent(opts());
+};
+
+/* ---------- Race Control ---------- */
+var RC = [], rcUrl = '', PACKS = [], OWNED = null;
+function chk(id) { return Array.prototype.filter.call($(id).querySelectorAll('input'), function (x) { return x.checked; }).map(function (x) { return x.value; }); }
+function filt() {
+  return { daily: chk('fDaily'), event: chk('fEvent'), team: $('fTeam').checked, long: $('fLong').checked, hosted: $('fHosted').checked,
+    dlcOnly: $('fDlcOnly').checked, owned: PACKS.length ? chk('fDlc') : (OWNED || []) };
+}
+function own(p) { return !p || (PACKS.length ? chk('fDlc') : (OWNED || [])).indexOf(p) !== -1; }
+function renderPacks() {
+  var o = OWNED || [];
+  $('fDlc').innerHTML = PACKS.length ? PACKS.map(function (p) {
+    return '<label><input type="checkbox" value="' + esc(p) + '"' + (o.indexOf(p) !== -1 ? ' checked' : '') + '>' + esc(p) + '</label>';
+  }).join('') : '<span class="muted">keine DLC-Strecken gefunden</span>';
+}
+function applyFilter(f) {
+  if (!f) return;
+  ['fDaily', 'fEvent'].forEach(function (id) {
+    var want = f[id === 'fDaily' ? 'daily' : 'event'] || [];
+    Array.prototype.forEach.call($(id).querySelectorAll('input'), function (x) { x.checked = want.indexOf(x.value) !== -1; });
+  });
+  $('fTeam').checked = !!f.team; $('fLong').checked = !!f.long; $('fHosted').checked = f.hosted !== false;
+  $('fDlcOnly').checked = !!f.dlcOnly;
+  if (f.owned) OWNED = f.owned;
+}
+function lvName(l) { return { silver: 'Silber', platinum: 'Platin', offen: 'offen' }[l] || l; }
+function renderRc() {
+  if (!RC.length) return;
+  var f = filt(), q = $('rcSearch').value.trim().toLowerCase();
+  var rows = RC.filter(function (x) {
+    if (x.kind === 'hosted' ? !f.hosted : x.kind === 'daily' ? f.daily.indexOf(x.level) === -1 : f.event.indexOf(x.level) === -1) return false;
+    if (f.team && !x.team) return false;
+    if (f.long && x.kind !== 'event' && x.durSec < 3600) return false;
+    if (f.dlcOnly) {
+      if (x.kind !== 'event' ? !own(x.dlc) : !((x.rounds && x.rounds.length) ? x.rounds.some(function (r) { return own(r.dlc); }) : (x.dlcs || []).every(own))) return false;
+    }
+    var hay = x.name + ' ' + (x.track || '') + ' ' + (x.host || '') + ' ' + (x.rounds || []).map(function (r) { return r.track + ' ' + r.label; }).join(' ') + ' ' + (x.label || '');
+    if (q && hay.toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+  var nowMs = Date.now();
+  var nextOf = function (x) {
+    if (x.kind !== 'event') return x.start;
+    var r = (x.rounds || []).filter(function (r) { return r.start > nowMs - 30 * 60000; })[0];
+    return r ? r.start : x.start;
+  };
+  rows.sort(function (a, b) { return nextOf(a) - nextOf(b); });
+  var seen = {}, out = [];
+  rows.forEach(function (x, i) {
+    var k = x.kind + x.name + (x.kind === 'daily' ? x.track : x.label);
+    if (seen[k]) return; seen[k] = 1;
+    var nextR = x.kind === 'event' ? (x.rounds || []).filter(function (r) { return r.start > Date.now() - 30 * 60000; })[0] : null;
+    out.push('<div class="it" data-i="' + RC.indexOf(x) + '"><b>' + esc(x.kind === 'daily' ? 'ab ' + x.label : nextR ? nextR.label : x.label) + '</b> · ' + esc(x.name) +
+      (x.kind === 'hosted' ? '<span class="lv offen">Hosted</span>' : '<span class="lv ' + esc(x.level) + '">' + esc(lvName(x.level)) + '</span>') + (x.team ? '<span class="team">TEAM</span>' : '') +
+      (x.kind !== 'event' ? (x.dlc ? '<span class="dlc' + (own(x.dlc) ? '' : ' miss') + '">' + esc(x.dlc) + '</span>' : '')
+        : (x.dlcs || []).map(function (p) { return '<span class="dlc' + (own(p) ? '' : ' miss') + '">' + esc(p) + '</span>'; }).join('')) +
+      '<div class="muted">' + (x.kind === 'daily' ? 'Daily Race · ' + esc(x.track) + ' · ' + Math.round(x.durSec / 60) + ' min' +
+          (x.interval ? ' · alle ' + Math.round(x.interval / 60000) + ' min – Klick zeigt die Termine der nächsten Tage' : '')
+        : x.kind === 'hosted' ? 'Hosted Race · ' + esc(x.track) + (x.classes ? ' · ' + esc(x.classes) : '') + (x.sessions ? ' · ' + esc(x.sessions) : '')
+        : esc(x.host || 'Community') + (x.roundsTxt ? ' · ' + esc(x.roundsTxt) : '') + (nextR ? ' · nächste Runde: ' + esc(nextR.track) : '') + (x.classes ? ' · ' + esc(x.classes) : '') +
+          (x.carPacks && x.carPacks.length ? '<br>Autos u. a. aus: ' + esc(x.carPacks.join(', ')) : '')) + '</div></div>');
+  });
+  $('rcList').innerHTML = out.length ? out.slice(0, 150).join('') : '<div class="muted" style="padding:6px 0">Nichts gefunden – Filter lockern.</div>';
+}
+function saveFilter() { google.script.run.adminRcSaveFilter(filt()); }
+['fDaily', 'fEvent', 'fDlc'].forEach(function (id) { $(id).addEventListener('change', function () { renderRc(); saveFilter(); }); });
+$('fTeam').onchange = $('fLong').onchange = $('fDlcOnly').onchange = $('fHosted').onchange = function () { renderRc(); saveFilter(); };
+$('rcSearch').oninput = renderRc;
+$('rcLoad').onclick = function () {
+  var b = this; b.disabled = true; $('rcList').innerHTML = '<div class="muted" style="padding:6px 0">lade von racecontrol.gg … (Daily Races, Meisterschaften, Hosted Races – kann ~30 s dauern)</div>';
+  google.script.run.withSuccessHandler(function (r) {
+    b.disabled = false; RC = r.list; PACKS = r.packs || []; if (r.filter) applyFilter(r.filter); renderPacks(); renderRc();
+  }).withFailureHandler(function (e) { b.disabled = false; $('rcList').innerHTML = '<div class="err">' + esc(e.message || e) + '</div>'; })
+    .adminRcList(false);
+};
+function pickTime(name, local, durSec, url, track, pMin, qMin) {
+  $('practice').value = pMin || 0; $('quali').value = qMin || 0; $('gap').value = 0;
+  if (track) $('track').value = track;
+  var gc = guessClass(name); if (gc) { $('cls').value = gc; $('cls').onchange(); }
+  if (/fixed/i.test(name)) $('setup').value = 'fixed';
+  $('name').value = name.replace(/[\[\]*?:\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+  $('start').value = local;
+  if (durSec) $('duration').value = Math.floor(durSec / 3600) + ':' + ('0' + Math.floor(durSec % 3600 / 60)).slice(-2);
+  rcUrl = url || '';
+  $('rcBox').open = false;
+  $('msg').className = 'muted';
+  $('msg').textContent = 'Übernommen: ' + name + (durSec ? '' : ' – Renndauer bitte prüfen (steht bei Community-Events nicht in Race Control).') +
+    (pMin || qMin ? ' Training/Qualifying aus Race Control übernommen.' : ' Training/Qualifying (min) bitte selbst eintragen, falls vor dem Rennen.');
+  preview();
+}
+function showRounds(ev) {
+  if (!ev.rounds.length) { $('rcList').innerHTML = '<div class="err">Keine Runden mit Startzeit gefunden.</div>'; return; }
+  if (ev.rounds.length === 1) { var r0 = ev.rounds[0]; pickTime(ev.name + ' ' + (r0.track || ''), r0.local, 0, ev.url, r0.track); return; }
+  $('rcList').innerHTML = '<div class="muted" style="padding:4px 0">' + esc(ev.name) + ' – Runde wählen:</div>' + ev.rounds.map(function (r, i) {
+    var miss = r.dlc && !own(r.dlc);
+    return '<div class="it' + (miss ? ' off' : '') + '" data-r="' + i + '"><b>' + esc(r.label) + '</b> · ' + esc(r.name || ('Runde ' + (i + 1))) +
+      (r.dlc ? '<span class="dlc' + (miss ? ' miss' : '') + '">' + esc(r.dlc) + (miss ? ' fehlt' : '') + '</span>' : '') +
+      '<div class="muted">' + esc(r.track) + '</div></div>';
+  }).join('') + '<div class="it" data-back="1">← zurück zur Liste</div>';
+  $('rcList').onclickRounds = ev;
+}
+/* Daily Races: Termine der nächsten 7 Tage (heute laut Race Control, danach im selben Takt hochgerechnet) */
+function vLocal(ms) {
+  var p = {};
+  new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Vienna', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date(ms)).forEach(function (q) { p[q.type] = q.value; });
+  return p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute;
+}
+function vDay(ms) { return new Date(ms).toLocaleDateString('de-AT', { timeZone: 'Europe/Vienna', weekday: 'long', day: '2-digit', month: '2-digit' }); }
+function vTime(ms) { return new Date(ms).toLocaleTimeString('de-AT', { timeZone: 'Europe/Vienna', hour: '2-digit', minute: '2-digit' }); }
+function showSlots(x) {
+  var now = Date.now(), slots = (x.times || []).filter(function (t) { return t > now - 30 * 60000; }).map(function (t) { return { t: t, est: false }; });
+  var last = (x.times || []).length ? x.times[x.times.length - 1] : 0;
+  if (x.interval >= 10 * 60000 && last) for (var t = last + x.interval; t < now + 7 * 864e5 && slots.length < 300; t += x.interval) if (t > now) slots.push({ t: t, est: true });
+  var h = '<div class="muted" style="padding:4px 0">' + esc(x.name) + ' · ' + esc(x.track) + ' – Termin wählen (Wiener Zeit):</div>', day = '';
+  slots.forEach(function (s, i) {
+    var d = vDay(s.t);
+    if (d !== day) { day = d; h += '<div class="grp" style="margin-top:8px">' + esc(d) + (s.est ? ' <span style="font-weight:400;text-transform:none">– voraussichtlich</span>' : '') + '</div>'; }
+    h += '<span class="chip" data-s="' + i + '">' + vTime(s.t) + '</span>';
+  });
+  h += '<div class="muted" style="margin-top:6px">Race Control veröffentlicht nur die Termine von heute. Spätere Tage sind im selben Takt hochgerechnet – der Daily-Race-Plan kann sich zum Wochenwechsel ändern.</div>';
+  h += '<div class="it" data-back="1">← zurück zur Liste</div>';
+  $('rcList').innerHTML = h;
+  $('rcList').onclickSlots = { x: x, slots: slots };
+}
+function loadEvent(id) {
+  $('rcList').innerHTML = '<div class="muted" style="padding:6px 0">lade Event …</div>';
+  google.script.run.withSuccessHandler(showRounds)
+    .withFailureHandler(function (e) { $('rcList').innerHTML = '<div class="err">' + esc(e.message || e) + '</div>'; }).adminRcEvent(id);
+}
+$('rcList').addEventListener('click', function (e) {
+  var it = e.target.closest('.it');
+  var ch = e.target.closest('.chip');
+  if (ch && ch.hasAttribute('data-s')) {
+    var S = $('rcList').onclickSlots, sl = S.slots[+ch.getAttribute('data-s')];
+    pickTime(S.x.name + ' ' + S.x.track, vLocal(sl.t), S.x.durSec, '', S.x.track);
+    if (sl.est) $('msg').textContent += ' Achtung: Termin hochgerechnet, bitte am Renntag in Race Control prüfen.';
+    return;
+  }
+  if (!it) return;
+  if (it.hasAttribute('data-back')) { renderRc(); return; }
+  if (it.hasAttribute('data-r')) {
+    var ev = $('rcList').onclickRounds, r = ev.rounds[+it.getAttribute('data-r')];
+    pickTime(ev.name + ' ' + (r.track || r.name || ''), r.local, 0, ev.url, r.track); return;
+  }
+  var x = RC[+it.getAttribute('data-i')];
+  if (x.kind === 'daily') showSlots(x);
+  else if (x.kind === 'hosted') pickTime(x.name, x.local, x.durSec, x.url, x.track, x.practice, x.quali);
+  else loadEvent(x.id);
+});
+$('rcLinkBtn').onclick = function () { var v = $('rcLink').value.trim(); if (v) loadEvent(v); };
+
+$('start').value = D.start;
+renderDrivers();
+</script>
+</body>
+</html>

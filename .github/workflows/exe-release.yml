@@ -1,0 +1,45 @@
+name: exe-Release
+
+on:
+  push:
+    branches: [main]
+    paths: ['exe/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: exe/go.mod
+      - name: Version lesen
+        id: v
+        run: echo "version=$(tr -d '[:space:]' < exe/VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Gibt es das Release schon?
+        id: exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "exe-v${{ steps.v.outputs.version }}" >/dev/null 2>&1; then echo "yes=1" >> "$GITHUB_OUTPUT"; fi
+      - name: Tests
+        if: steps.exists.outputs.yes != '1'
+        working-directory: exe
+        run: go test ./...
+      - name: Windows-exe bauen
+        if: steps.exists.outputs.yes != '1'
+        working-directory: exe
+        run: GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.Version=${{ steps.v.outputs.version }}" -o ../lmu-stint-sync.exe .
+      - name: Release anlegen
+        if: steps.exists.outputs.yes != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp lmu-stint-sync.exe "lmu-stint-sync-v${{ steps.v.outputs.version }}.exe"
+          gh release create "exe-v${{ steps.v.outputs.version }}" lmu-stint-sync.exe "lmu-stint-sync-v${{ steps.v.outputs.version }}.exe" docs/ANLEITUNG.md \
+            --title "exe ${{ steps.v.outputs.version }}" \
+            --notes "Windows-exe ${{ steps.v.outputs.version }}. Herunterladen, alte exe schließen, neue starten – Einstellungen bleiben. Anleitung: docs/ANLEITUNG.md"

@@ -1,0 +1,134 @@
+[
+ {
+  "v": "3.5",
+  "date": "11.11.2026",
+  "notes": [
+   "Updates kommen jetzt von GitHub (github.com/zoppmczopper-ship-it/LMU-Stint-Sync) – die Vorlage bleibt als Ersatzquelle"
+  ]
+ },
+ {
+  "v": "3.4",
+  "date": "01.11.2026",
+  "notes": [
+   "Mehrere Fahrer gleichzeitig: jeder Fahrer hat seinen eigenen Live-Stand – nichts überschreibt sich mehr",
+   "Mechaniker-Board und Live-Dashboard: Auswahl oben (🟢 Fahrer · Strecke · Session · Startnummer), sobald mehrere gleichzeitig fahren",
+   "Fahrerwechsel im selben Auto: die Ansicht springt automatisch auf den neuen Fahrer und behält Event und Plan",
+   "Jedes Rennen (Auto + Session) bekommt sein eigenes Event; Plan-Einträge landen im richtigen Event-Tab",
+   "Box-Menü kommt nur noch vom Fahrer im Auto (exe 2.6.4)"
+  ]
+ },
+ {
+  "v": "3.3",
+  "date": "31.10.2026",
+  "notes": [
+   "Mechaniker-Board zeigt, was in LMU wirklich eingestellt ist (Virtuelle Energie, Kraftstoffkapazität, Liter) und warnt, wenn es von der Empfehlung abweicht (braucht exe 2.6.3)",
+   "Neue Karte „Box-Menü in LMU“: VE-Auffüllung, Fuel Ratio, Reifen, Drücke, Flügel, Bremsen und Fahrer für den nächsten Stopp – plus wie viel VE bis zur Zielflagge nötig ist",
+   "Klassement: Tankfüllstand der Gegner und ihre Start-VE im laufenden Stint"
+  ]
+ },
+ {
+  "v": "3.2",
+  "date": "31.10.2026",
+  "notes": [
+   "Mechaniker-Board: „Sprit fürs Rennen“ zeigt die Werte für LMU (Auto-Setup → Antriebsstrang → Motor): Virtuelle Energie % und Kraftstoffkapazität (Liter je 1 % VE, aus Training/Qualifying gemessen) bzw. Kraftstoff in Litern bei Autos ohne VE"
+  ]
+ },
+ {
+  "v": "3.1",
+  "date": "31.10.2026",
+  "notes": [
+   "Live-Dashboard zeigt nur Daten des laufenden Events (vom Event-Start inkl. Training bis Rennende); Häkchen „alle Daten“ zeigt alles",
+   "Ohne laufendes Event: Hinweis auf das nächste Event",
+   "Startet ein Rennen ohne passendes Event, wird automatisch ein Event-Tab angelegt (Strecke + Datum, Rennstart und -dauer aus LMU, Rundenzeit aus eurer Pace) und aktiv gesetzt",
+   "Neue Einstellungen: „Event automatisch anlegen“ und „Live nur aktives Rennen“ (ja/nein)"
+  ]
+ },
+ {
+  "v": "3.0",
+  "date": "30.10.2026",
+  "notes": [
+   "Neu: Strecken-Analyse (…/exec?view=map) – Streckenkarte aus der gefahrenen Linie, grün/rot wo Zeit gewonnen/verloren wird, Zeitabstand-, Tempo- und Gas/Bremse-Grafik, Kurven-Tabelle mit Bremspunkt und Kurvenspeed",
+   "Vergleich mit der besten Team-Runde (auch aus früheren Rennen auf derselben Strecke), mit der eigenen besten Runde oder frei gewählten Runden; Fahrer farbig, ein-/ausblendbar",
+   "Highlights für Videos: Überholmanöver, Zweikämpfe, Dreher, Bestzeiten, Kontakte – mit Video-Zeitstempel und Kopie als YouTube-Kapitel",
+   "Braucht exe 2.6 (zeichnet die Rundenspur auf); neuer Tab „Linien“"
+  ]
+ },
+ {
+  "v": "2.9.5",
+  "date": "30.10.2026",
+  "notes": [
+   "Race Control: Daily Races zeigen per Klick die Termine der nächsten 7 Tage (Race Control veröffentlicht nur heute – spätere Tage im selben Takt hochgerechnet)",
+   "Race Control: auch laufende Meisterschaften (erste Runde schon vorbei) und alle Seiten der kommenden Events",
+   "Race Control: Hosted Races, inkl. Training/Qualifying/Renndauer automatisch übernommen",
+   "Suche findet auch Strecken einzelner Meisterschafts-Runden (z. B. „Barcelona“)"
+  ]
+ },
+ {
+  "v": "2.9.4",
+  "date": "27.10.2026",
+  "notes": [
+   "Mechaniker-Board: „Box empfohlen Ende Runde X (1 Rd Reserve) · spätestens Ende Runde Y“ statt nur eines (zu vorsichtigen) Werts",
+   "Reicht die Energie bis zur Zielflagge, steht „kein Stopp nötig“ und die Energie-Ampel bleibt grün",
+   "Bedarf bis Rennende rechnet die Runde nach Ablauf der Zeit mit",
+   "Abstand vorne wurde bei manchen Daten nicht angezeigt (negatives Vorzeichen aus LMU)"
+  ]
+ },
+ {
+  "v": "2.9.3",
+  "date": "27.10.2026",
+  "notes": [
+   "Live-Dashboard und Mechaniker-Board: Klassement mit Abständen zum Klassenführenden, zum Vordermann und zum eigenen Auto, Runden, letzte/beste Runde, Boxenstopps (braucht exe 2.5)",
+   "Umschalter „Meine Klasse“ / „Alle“; im Training/Qualifying Abstände nach Bestzeit"
+  ]
+ },
+ {
+  "v": "2.9.2",
+  "date": "27.10.2026",
+  "notes": [
+   "Neues Event: Ablauf mit Training, Qualifying und Pause – der Rennstart wird daraus berechnet (Event-Tab L1–M4, änderbar)",
+   "Plan-Dashboard zeigt vor dem Rennen „Training läuft“ / „Qualifying läuft“ und den Countdown zum Rennstart",
+   "Mechaniker-Board: „Sprit fürs Rennen“ – Start-Tankmenge aus dem Ø-Verbrauch im Training/Qualifying (gleiche Strecke und Auto) und der Rennlänge des aktiven Events",
+   "Reifentemperaturen nach festen Bereichen eingefärbt: kalt < 70 °C, ideal 80–90 °C, heiß > 97 °C (in Sync-Einstellungen änderbar)",
+   "Bremsen: kalt < 350 °C, gut bis 650 °C, kritisch bis 750 °C, darüber rot (alte Standardwerte 800/900 werden umgestellt)",
+   "Setup-Tipps bei überhitzten oder zu kalten Reifen und zu kalten Bremsen",
+   "Mechaniker-Board: Abstand zum Auto vor und hinter einem (Sekunden + Name)"
+  ]
+ },
+ {
+  "v": "2.9.1",
+  "date": "27.10.2026",
+  "notes": [
+   "Neues Event: Vorschau zeigt die Gesamtzahl der Runden (aus Renndauer, Rundenzeit und Boxenstopps)",
+   "Event-Tab: „Gesamt: ca. … Runden“ oben (rechnet bei Änderungen mit)"
+  ]
+ },
+ {
+  "v": "2.9",
+  "date": "27.10.2026",
+  "notes": [
+   "Updates per Klick: Admin zeigt „Update verfügbar“, ein Klick übernimmt die neue Version – ohne neu bereitzustellen",
+   "„Zurück“ schaltet auf die vorige Version zurück"
+  ]
+ },
+ {
+  "v": "2.8",
+  "date": "27.10.2026",
+  "notes": [
+   "Neues Event: Rundenzeit- und Verbrauchsvorschlag (eigene Pace + BoP Tourism), Tankempfehlung je Stint (Spalte K)"
+  ]
+ },
+ {
+  "v": "2.7",
+  "date": "26.10.2026",
+  "notes": [
+   "Race Control: DLC-Filter, Strecken-Pakete"
+  ]
+ },
+ {
+  "v": "2.6",
+  "date": "26.10.2026",
+  "notes": [
+   "Mechaniker-Board mit Setup-Tipps"
+  ]
+ }
+]

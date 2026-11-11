@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root{--bg:#0e1116;--card:#171b22;--line:#262c36;--text:#e8ecf2;--mute:#8b95a5;
+    --accent:#ff5a1f;--ok:#2fbf71;--warn:#f2b632;--bad:#e5484d;--blue:#3fb8ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:12px 16px 40px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+  h1{font-size:17px;margin:0}
+  .pill{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--line);color:var(--mute);white-space:nowrap}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-bottom:6px}
+  .mono{font-variant-numeric:tabular-nums}
+  .mute{color:var(--mute)}
+  .lights{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+  .light{border-radius:12px;padding:10px 8px;background:var(--card);border:1px solid var(--line);text-align:center}
+  .light .dot{width:18px;height:18px;border-radius:50%;margin:0 auto 6px;background:#3a414d}
+  .light.green .dot{background:var(--ok);box-shadow:0 0 10px rgba(47,191,113,.6)}
+  .light.yellow .dot{background:var(--warn);box-shadow:0 0 10px rgba(242,182,50,.6)}
+  .light.red .dot{background:var(--bad);box-shadow:0 0 12px rgba(229,72,77,.8);animation:blink 1s infinite}
+  .light.red{border-color:var(--bad)}
+  @keyframes blink{50%{opacity:.35}}
+  .light b{display:block;font-size:13px}
+  .light span{display:block;font-size:11px;color:var(--mute);margin-top:2px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .grid2 .card{margin:0}
+  .kv{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .kv:last-child{border-bottom:0}
+  .kv b{font-variant-numeric:tabular-nums}
+  .big{font-size:26px;font-weight:700}
+  .wheels{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .wheel{border:1px solid var(--line);border-radius:10px;padding:8px}
+  .wheel .w{font-size:22px;font-weight:700}
+  .wheel .t3{display:flex;gap:3px;margin:6px 0}
+  .wheel .t3 i{flex:1;font-style:normal;text-align:center;font-size:12px;padding:3px 0;border-radius:5px;background:var(--line)}
+  .small{font-size:12px;color:var(--mute)}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)} .blue{color:var(--blue)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-weight:600;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:6px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .scroll{overflow-x:auto}
+  .foot{font-size:12px;color:var(--mute);text-align:center;margin-top:8px}
+  .tip{border-left:3px solid var(--blue);padding:6px 10px;margin:8px 0;background:rgba(255,255,255,.02);border-radius:0 8px 8px 0}
+  .tip.warn{border-left-color:var(--warn)}
+  .tip .t{font-weight:700}
+  .tip .area{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-right:6px}
+  .tip ul{margin:4px 0 0 18px;padding:0}
+  .tip li{margin:2px 0}
+  .tip .g{font-size:12px;color:var(--mute);margin-top:3px}
+  @media (max-width:640px){.lights{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}}
+  .fld td,.fld th{padding:5px 4px}
+  .fld tr.me td{background:rgba(255,90,31,.14)}
+  .fld tr.me td:first-child{box-shadow:inset 3px 0 0 #ff5a1f}
+  .fld .o{font-size:11px;color:#8b95a5}
+  .fld td.cls{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8b95a5;padding-top:10px}
+  .fld .ahead{color:#f2b632}.fld .behind{color:#3fb8ff}
+  .tgl{font:inherit;font-size:12px;background:transparent;color:#8b95a5;border:1px solid #262c36;border-radius:99px;padding:2px 10px;cursor:pointer}
+  .tgl.on{color:#e8ecf2;border-color:#8b95a5}
+  .setup{border:1px solid var(--accent);border-radius:10px;padding:8px 10px;margin:4px 0 10px;background:rgba(255,90,31,.06)}
+  .setrow{display:flex;justify-content:space-between;font-size:16px;padding:3px 0}
+  .setrow b{font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>🔧 Box · Mechaniker</h1><span class="pill" id="state">lädt…</span></header>
+  <div id="cars" style="display:none;gap:6px;flex-wrap:wrap;margin:-4px 0 10px"></div>
+  <div class="small" id="who" style="margin:-4px 0 10px"></div>
+
+  <div class="lights" id="lights"></div>
+
+  <div class="card" id="raceCard">
+    <div class="lbl">Sprit fürs Rennen (Start-Tankmenge)</div>
+    <div class="big mono" id="raceStart">–</div>
+    <div class="small" id="raceStartTxt"></div>
+    <div id="race" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card" id="pitCard">
+    <div class="lbl">Box-Menü in LMU (nächster Stopp)</div>
+    <div id="pitMenu" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card" id="tipCard">
+    <div class="lbl">Setup-Tipps für den Mechaniker</div>
+    <div class="small" id="carSet" style="margin-bottom:6px"></div>
+    <div id="balance" class="small" style="margin-bottom:8px"></div>
+    <div id="tips"></div>
+    <div class="small" style="margin-top:8px">Faustregeln aus den Fahrdaten der letzten Runden (ab exe 2.3). Immer nur eine Änderung auf einmal und 2–3 Runden beobachten.</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="lbl">Energie &amp; Sprit</div>
+      <div class="big mono" id="lapsLeft">–</div>
+      <div class="small" id="lapsLeftTxt"></div>
+      <div id="energy" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Schaden · Motor · Umgebung</div>
+      <div id="misc"></div>
+    </div>
+  </div>
+
+  <div class="card" id="fieldCard" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+      <div class="lbl" style="margin:0">Klassement · Abstände</div>
+      <div><button class="tgl on" id="fMine">Meine Klasse</button> <button class="tgl" id="fAll">Alle</button></div>
+    </div>
+    <div class="scroll"><table class="fld"><thead><tr><th>Pos</th><th>Fahrer · Auto</th><th class="r">Rd</th><th class="r">zum Führ.</th><th class="r">Intervall</th><th class="r">zu mir</th><th class="r">Letzte</th><th class="r">Beste</th><th class="r">Stopps</th></tr></thead><tbody id="fieldBody"></tbody></table></div>
+    <div class="small mute" id="fieldInfo" style="font-size:12px;margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <div class="lbl">Reifen <span id="tyreInfo" class="mute"></span></div>
+    <div class="wheels" id="wheels"></div>
+    <div class="small" style="margin-top:6px">Temperatur innen / mitte / außen:
+      <span style="padding:0 4px;border-radius:4px;background:rgba(63,184,255,.35)">kalt &lt; <span id="lc">70</span>°</span>
+      <span style="padding:0 4px;border-radius:4px;background:rgba(47,191,113,.18)">okay</span>
+      <span style="padding:0 4px;border-radius:4px;background:rgba(47,191,113,.45)">ideal <span id="li">80–90</span>°</span>
+      <span style="padding:0 4px;border-radius:4px;background:rgba(242,182,50,.35)">warm</span>
+      <span style="padding:0 4px;border-radius:4px;background:rgba(229,72,77,.45)">heiß &gt; <span id="lh">97</span>°</span>.
+      Innen deutlich heißer als außen → viel Sturz; Mitte heißer als die Ränder → Druck zu hoch.
+      Bremse: <span class="blue">kalt &lt; <span id="bc">350</span>°</span> · <span class="ok">gut bis <span id="by">650</span>°</span> · <span class="warn">kritisch bis <span id="br">750</span>°</span> · <span class="bad">darüber zu heiß</span>.</div>
+  </div>
+
+  <div class="card" id="garageCard" style="display:none">
+    <div class="lbl">Werkstatt-Daten aus LMU (Verschleiß / Reparatur)</div>
+    <div id="garage"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Boxenstopp-Protokoll</div>
+    <div class="scroll"><table><thead><tr><th>Zeit</th><th>Fahrer</th><th>Rd</th><th>Gasse</th><th>Stand</th><th>Sprit</th><th>VE</th><th>Reifen</th><th>Rep.</th><th>Schaden</th><th>Wechsel</th></tr></thead><tbody id="pits"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Stint-Zusammenfassung</div>
+    <div class="scroll"><table><thead><tr><th>Fahrer</th><th>Start</th><th>Rd</th><th>Beste</th><th>Ø</th><th>Sprit/Rd</th><th>VE/Rd</th><th>Reifen/Rd</th><th>Abfall s/Rd</th></tr></thead><tbody id="stints"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Letzte Runden</div>
+    <div class="scroll"><table><thead><tr><th>Rd</th><th>Zeit</th><th>Sprit</th><th>Sprit/Rd</th><th>VE</th><th>VE/Rd</th><th>Reifen VL/VR/HL/HR</th></tr></thead><tbody id="laps"></tbody></table></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+<script>
+var API = <?!= JSON.stringify(apiUrl) ?>;
+var L = {};
+function $(i) { return document.getElementById(i); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function n(v, d) { if (v == null || v === '' || isNaN(v)) return '–'; return Number(v).toFixed(d == null ? 0 : d).replace('.', ','); }
+function lapT(s) { if (!s || s <= 0) return '–'; var m = Math.floor(s / 60); return m + ':' + ('0' + (s - m * 60).toFixed(3)).slice(-6); }
+function kv(k, v, cls) { return '<div class="kv"><span class="mute">' + esc(k) + '</span><b class="' + (cls || '') + '">' + v + '</b></div>'; }
+function wearCls(w) { return w == null ? '' : w < L.tRed ? 'bad' : w < L.tYel ? 'warn' : 'ok'; }
+function brakeCls(b) { return !b ? '' : b > L.bRed ? 'bad' : b > L.bYel ? 'warn' : b < L.bCold ? 'blue' : 'ok'; }
+function tempBg(t) {
+  if (t == null || !(t > 5)) return '';
+  if (t > L.tHot) return 'background:rgba(229,72,77,.45)';
+  if (t > L.tIdealHi) return 'background:rgba(242,182,50,.35)';
+  if (t >= L.tIdealLo) return 'background:rgba(47,191,113,.45)';
+  if (t >= L.tCold) return 'background:rgba(47,191,113,.18)';
+  return 'background:rgba(63,184,255,.35)';
+}
+function hm(s) { s = Math.round(s); return Math.floor(s / 3600) + ':' + ('0' + Math.floor(s % 3600 / 60)).slice(-2); }
+var LMU = null;
+function ago(ts) { var s = Math.max(0, Math.round((Date.now() - ts) / 1000)); return s < 90 ? s + ' s' : s < 5400 ? Math.round(s / 60) + ' min' : Math.round(s / 3600) + ' h'; }
+function renderPit(m) {
+  var el = $('pitMenu'); if (!el) return;
+  var p = m && m.pit;
+  if (!p) { el.innerHTML = '<div class="small mute">Noch keine Daten – kommt von der exe ab 2.6.3, sobald LMU läuft.</div>'; return; }
+  var h = '';
+  if (p.ve != null) {
+    var nx = m.next, cls = '';
+    if (nx && !nx.more) cls = p.ve + 1 < nx.ve ? 'bad' : p.ve > nx.ve + 10 ? 'warn' : 'ok';
+    h += kv('VE auffüllen auf', n(p.ve, 0) + ' %' + (p.veLaps ? ' (LMU: ' + p.veLaps + ' Rd)' : ''), cls);
+    if (nx) h += kv('nötig bis Ziel', nx.more ? '100 % – danach noch ein Stopp' : 'ca. ' + nx.ve + ' % (' + n(nx.laps, 1) + ' Rd + 1 Reserve)', nx.more ? 'warn' : '');
+  }
+  if (p.ratio != null) h += kv('Fuel Ratio', p.ratio.toFixed(2));
+  if (p.fuel != null) h += kv('Sprit', n(p.fuel, 0) + ' l');
+  if (p.tyres) h += kv('Reifen', esc(p.tyres));
+  if (p.press) h += kv('Drücke VL/VR/HL/HR', esc(p.press));
+  if (p.wing) h += kv('Heckflügel', esc(p.wing));
+  if (p.brakes) h += kv('Bremsen tauschen', esc(p.brakes));
+  if (p.damage) h += kv('Schaden', esc(p.damage));
+  if (p.driver) h += kv('Fahrer', esc(p.driver));
+  el.innerHTML = h + '<div class="small mute">Stand vor ' + ago(m.ts) + ' · ändern nur im Spiel (Box-Menü)</div>';
+}
+function renderRace(r, lv) {
+  r = r || {};
+  var p = r.perLap, e = r.event, st = r.start, h = '';
+  if (r.err) { $('raceStart').textContent = '–'; $('raceStartTxt').textContent = 'Fehler: ' + r.err; $('race').innerHTML = ''; return; }
+  if (st) {
+    $('raceStart').textContent = [st.fuel != null ? n(st.fuel, 1) + ' l' : '', st.ve != null ? st.ve + ' % VE' : ''].filter(Boolean).join(' · ');
+    $('raceStart').className = 'big mono ok';
+    $('raceStartTxt').textContent = st.noStop ? 'reicht für das ganze Rennen ohne Nachtanken (' + n(st.laps, 1) + ' Rd inkl. Reserve)'
+      : (st.full ? 'voll tanken' : 'für den 1. Stint (' + st.laps + ' Rd + ' + n(e.reserve, 1) + ' Rd Reserve)') + ' · mind. ' + st.stops + ' Boxenstopp' + (st.stops === 1 ? '' : 's') + ' nötig';
+  } else {
+    $('raceStart').textContent = '–'; $('raceStart').className = 'big mono';
+    $('raceStartTxt').textContent = !e ? 'Kein aktives Event – Rennlänge unbekannt (Admin → Events)' : 'Noch kein Verbrauch – im Training/Qualifying ein paar saubere Runden fahren';
+  }
+  var su = r.setup;
+  if (su && su.kind === 've') h += '<div class="setup"><div class="small">In LMU einstellen: Auto-Setup → Antriebsstrang → Motor</div>' +
+    '<div class="setrow"><span>Virtuelle Energie</span><b>' + su.ve + ' %</b></div>' +
+    (su.ratio != null ? '<div class="setrow"><span>Kraftstoffkapazität</span><b>' + su.ratio.toFixed(2) + '</b></div><div class="small">→ ca. ' + n(su.litres, 1) + ' l Kraftstoff an Bord (gerade etwas mehr als die VE braucht)</div>'
+      : '<div class="small">Kraftstoffkapazität: noch kein Wert – dafür im Training ein paar saubere Runden fahren</div>') + '</div>';
+  var g = LMU && LMU.garage;
+  if (g && su && su.kind === 've') {
+    var dv = g.ve != null ? g.ve - su.ve : null, dr = g.ratio != null && su.ratio != null ? g.ratio - su.ratio : null;
+    var bad = (dv != null && Math.abs(dv) > 2) || (dr != null && Math.abs(dr) >= 0.02);
+    h += '<div class="setup" style="border-color:' + (bad ? 'var(--warn)' : 'var(--ok)') + '"><div class="small">In LMU eingestellt (' + esc(LMU.driver || '') + ', vor ' + ago(LMU.ts) + ')</div>' +
+      '<div class="setrow"><span>Virtuelle Energie</span><b class="' + (dv != null && Math.abs(dv) > 2 ? 'warn' : 'ok') + '">' + n(g.ve, 0) + ' %' + (g.veLaps ? ' <span class="small">(LMU: ' + n(g.veLaps, 1) + ' Rd)</span>' : '') + '</b></div>' +
+      (g.ratio != null ? '<div class="setrow"><span>Kraftstoffkapazität</span><b class="' + (dr != null && Math.abs(dr) >= 0.02 ? 'warn' : 'ok') + '">' + g.ratio.toFixed(2) + '</b></div>' : '') +
+      (g.litres != null ? '<div class="small">= ' + n(g.litres, 1) + ' l an Bord</div>' : '') +
+      (bad ? '<div class="small warn">⚠ weicht von der Empfehlung ab' + (dv != null && dv < -2 ? ' – zu wenig VE fürs Rennen?' : '') + (dr != null && dr <= -0.02 ? ' – Sprit könnte vor der VE ausgehen' : '') + '</div>' : '<div class="small ok">✓ passt zur Empfehlung</div>') + '</div>';
+  } else if (g) {
+    h += kv('In LMU eingestellt', [g.ve != null ? n(g.ve, 0) + ' % VE' : '', g.ratio != null ? 'Kap. ' + g.ratio.toFixed(2) : '', g.litres != null ? n(g.litres, 1) + ' l' : ''].filter(Boolean).join(' · '));
+  }
+  if (su && su.kind === 'fuel') h += '<div class="setup"><div class="small">In LMU einstellen: Kraftstoff</div><div class="setrow"><span>Kraftstoff</span><b>' + su.fuel + ' l</b></div></div>';
+  if (p) h += kv('Ø Verbrauch/Rd (' + p.from + ')', [p.fuel ? n(p.fuel, 2) + ' l' : '', p.ve ? n(p.ve, 2) + ' % VE' : ''].filter(Boolean).join(' · ') || '–');
+  if (p && p.ratio) h += kv('gemessen: Liter je 1 % VE', n(p.ratio, 3));
+  if (r.src) h += kv('Grundlage', r.src.laps + ' Rd ' + esc(r.src.sessions) + (r.src.sameCar ? '' : ' (anderes Auto!)') + (r.src.lapSec ? ' · Ø ' + lapT(r.src.lapSec) : ''), r.src.sameCar ? '' : 'warn');
+  if (e) h += kv('Rennen „' + esc(e.name) + '“', hm(e.durSec) + ' h · ca. ' + e.laps + ' Rd à ' + lapT(e.lapSec) + (e.stints > 1 ? ' · ' + e.stints + ' Stints laut Plan' : ''));
+  if (r.total) h += kv('Gesamtbedarf (' + n(r.total.laps, 1) + ' Rd inkl. Reserve)', [r.total.fuel != null ? n(r.total.fuel, 1) + ' l' : '', r.total.ve != null ? n(r.total.ve, 0) + ' % VE' : ''].filter(Boolean).join(' · '));
+  if (lv && lv.fuelCap) h += kv('Tankgröße', n(lv.fuelCap, 0) + ' l');
+  $('race').innerHTML = h;
+}
+
+
+/* ---------- Klassement ---------- */
+var FIELD_ALL = false, FIELD_LAST = null;
+function fEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function fLap(s) { if (!s || s <= 0) return '–'; var m = Math.floor(s / 60); return m + ':' + ('0' + (s - m * 60).toFixed(3)).slice(-6); }
+function fNum(t) { return Math.abs(t).toFixed(1).replace('.', ','); }
+function fGap(t, l) { if (l) return '+' + l + ' Rd'; if (t == null) return ''; return '+' + fNum(t); }
+function fRel(t, l) { if (l) return (l > 0 ? '+' : '−') + Math.abs(l) + ' Rd'; if (t == null) return ''; return (t < 0 ? '−' : '+') + fNum(t); }
+function renderField(f) {
+  FIELD_LAST = f;
+  var card = document.getElementById('fieldCard');
+  if (!f || !f.rows || !f.rows.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  var race = /renn/i.test(f.session || ''), me = f.rows.filter(function (r) { return r.me; })[0], cls = me ? me.c : (f.cls || f.rows[0].c);
+  var rows = FIELD_ALL ? f.rows : f.rows.filter(function (r) { return r.c === cls; });
+  var lead = {};
+  f.rows.forEach(function (r) { if (r.p === 1) lead[r.c] = r; });
+  var meBest = me && me.best > 0 ? me.best : null, prev = null, prevCls = null, h = '';
+  rows.forEach(function (r) {
+    if (r.c !== prevCls) { prev = null; prevCls = r.c; if (FIELD_ALL) h += '<tr><td colspan="9" class="cls">' + fEsc(r.c) + '</td></tr>'; }
+    var g, gi, gp, L = lead[r.c];
+    if (race) {
+      g = r.p === 1 ? 'Führend' : fGap(r.gl, r.gll);
+      gi = r.p === 1 ? '' : fGap(r.gi, r.gil);
+      gp = r.me ? 'ich' : (r.gp != null || r.gpl ? fRel(r.gp, r.gpl) : '');
+    } else {
+      g = r.p === 1 ? 'Bestzeit' : (r.best > 0 && L && L.best > 0 ? fGap(r.best - L.best, 0) : '–');
+      gi = prev && r.best > 0 && prev.best > 0 ? fGap(r.best - prev.best, 0) : '';
+      gp = r.me ? 'ich' : (meBest && r.best > 0 && r.c === cls ? fRel(r.best - meBest, 0) : '');
+    }
+    prev = r;
+    var rel = gp.charAt(0) === '−' ? 'ahead' : gp.charAt(0) === '+' ? 'behind' : '';
+    h += '<tr class="' + (r.me ? 'me' : '') + '"><td><b>' + r.p + '</b><div class="o">P' + r.o + '</div></td>' +
+      '<td>' + (r.box ? '🅿 ' : '') + (r.fin ? '🏁 ' : '') + fEsc(r.n) + '<div class="o">' + fEsc(r.v) + (r.pen ? ' · ' + r.pen + ' Strafe' : '') + (r.ff != null ? ' · ⛽ ' + Math.round(r.ff) + ' %' : '') + (r.sv != null && race ? ' · Start-VE ' + Math.round(r.sv) + ' %' + (r.sl > 0 ? ' (ab Rd ' + r.sl + ')' : '') : '') + '</div></td>' +
+      '<td class="r">' + (r.l != null ? r.l : '') + '</td><td class="r">' + g + '</td><td class="r">' + gi + '</td>' +
+      '<td class="r ' + rel + '"><b>' + gp + '</b></td><td class="r">' + fLap(r.last) + '</td><td class="r">' + fLap(r.best) + '</td><td class="r">' + (r.pits || 0) + '</td></tr>';
+  });
+  document.getElementById('fieldBody').innerHTML = h;
+  document.getElementById('fieldInfo').textContent = (race ? 'Rennen: Abstände nach Rennzeit' : (f.session || 'Session') + ': Abstände nach Bestzeit') +
+    ' · zu mir: − = vor mir, + = hinter mir · ' + (FIELD_ALL ? f.rows.length + ' Autos' : rows.length + ' Autos in ' + cls) +
+    (f.ts ? ' · Stand ' + new Date(f.ts).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
+}
+document.getElementById('fMine').onclick = function () { FIELD_ALL = false; this.className = 'tgl on'; document.getElementById('fAll').className = 'tgl'; renderField(FIELD_LAST); };
+document.getElementById('fAll').onclick = function () { FIELD_ALL = true; this.className = 'tgl on'; document.getElementById('fMine').className = 'tgl'; renderField(FIELD_LAST); };
+
+/* ---------- Auswahl, wenn mehrere Fahrer gleichzeitig fahren ---------- */
+var SEL = (function () { try { return localStorage.getItem('lmuSel') || ''; } catch (e) { return ''; } })();
+function renderCars(d) {
+  var el = document.getElementById('cars'); if (!el) return;
+  if (d.sel) { SEL = d.sel; try { localStorage.setItem('lmuSel', SEL); } catch (e) { /* egal */ } }
+  var cs = d.cars || [];
+  if (cs.length < 2) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  var e = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  el.style.display = 'flex';
+  el.innerHTML = cs.map(function (c) {
+    var num = (String(c.car || '').match(/#\s*\d+/) || [''])[0];
+    return '<button class="tgl' + (c.drv === d.sel ? ' on' : '') + '" data-d="' + e(c.drv) + '" title="' + e(c.car) + '">' +
+      (c.active ? '🟢 ' : '⚪ ') + '<b>' + e(c.drv) + '</b> · ' + e(c.track) + ' · ' + e(c.session) + (num ? ' · ' + e(num) : '') + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('button'), function (b) {
+    b.onclick = function () { SEL = b.getAttribute('data-d'); try { localStorage.setItem('lmuSel', SEL); } catch (x) { /* egal */ } load(); };
+  });
+}
+function render(d) {
+  renderCars(d);
+  L = d.limits || {};
+  var lv = d.live, c = d.calc || {};
+  $('state').textContent = lv ? (lv.inPits ? 'in der Box' : 'auf der Strecke') : 'keine Live-Daten';
+  $('who').textContent = lv ? (lv.driver + ' · ' + (lv.car || '') + ' · ' + (lv.track || '') + ' · Runde ' + lv.lap + ' · P' + lv.place + ' (Klasse P' + lv.classPlace + ')') : '';
+
+  $('lights').innerHTML = (d.lights || []).map(function (x) {
+    return '<div class="light ' + x.state + '"><div class="dot"></div><b>' + esc(x.label) + '</b><span>' + esc(x.text) + '</span></div>';
+  }).join('');
+
+  var S = d.hdl && d.hdl.set, sv = function (k, lbl) { return S && S[k + 'Max'] > 0 ? lbl + ' ' + S[k] + '/' + S[k + 'Max'] : null; };
+  $('carSet').textContent = S ? 'Im Auto: ' + [sv('tc', 'TC'), sv('tcSlip', 'TC-Slip'), sv('tcCut', 'TC-Cut'), sv('abs', 'ABS'), sv('map', 'Map'),
+    S.bias ? 'Bremsbalance ' + n(S.bias, 1) + ' %' : null, sv('mig', 'Migration'), sv('arbF', 'Stabi v'), sv('arbR', 'Stabi h')].filter(Boolean).join(' · ') : 'Noch keine Fahrdaten (exe ab 2.3 nötig).';
+  var H = d.hdl;
+  $('balance').innerHTML = H ? ['entry', 'mid', 'exit'].map(function (k, i) {
+    var p = H[k], nm = ['Einlenken', 'Mitte', 'Ausgang'][i];
+    return nm + ': <b class="' + (p.us >= 20 ? 'warn' : '') + '">US ' + p.us + ' %</b> / <b class="' + (p.os >= 12 ? 'bad' : '') + '">OS ' + p.os + ' %</b>';
+  }).join(' · ') + ' · Blockieren v/h ' + H.lockF.v + '/' + H.lockR.v + ' % · Durchdrehen ' + H.spin.v + ' %' : '';
+  var T = d.tips || [];
+  $('tips').innerHTML = T.length ? T.map(function (t) {
+    return '<div class="tip ' + t.level + '"><span class="area">' + esc(t.area) + '</span><span class="t">' + esc(t.title) + '</span>' +
+      '<div class="small">' + esc(t.why) + '</div>' +
+      (t.car.length ? '<ul>' + t.car.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>' : '') +
+      (t.garage ? '<div class="g">' + esc(t.garage) + '</div>' : '') + '</div>';
+  }).join('') : '<div class="small ok">Keine Auffälligkeiten – Balance passt.</div>';
+
+  $('lc').textContent = L.tCold; $('li').textContent = L.tIdealLo + '–' + L.tIdealHi; $('lh').textContent = L.tHot;
+  $('bc').textContent = L.bCold; $('by').textContent = L.bYel; $('br').textContent = L.bRed;
+  LMU = d.lmu || null;
+  renderRace(d.race, lv);
+  renderPit(LMU);
+  renderField(d.field);
+  if (!lv) { $('foot').textContent = 'Noch keine Daten – sobald ein Fahrer mit der exe fährt, erscheinen sie hier.'; return; }
+
+  $('lapsLeft').textContent = c.lapsLeft != null ? n(c.lapsLeft, 1) + ' Rd' : '–';
+  $('lapsLeft').className = 'big mono ' + (c.lapsLeft == null ? '' : c.lapsLeft < L.eRed ? 'bad' : c.lapsLeft < L.eYel ? 'warn' : 'ok');
+  $('lapsLeftTxt').textContent = c.lapsLeft == null ? 'Verbrauch wird nach den ersten sauberen Runden berechnet'
+    : 'bis leer (begrenzt durch ' + c.limitBy + ') · ' + (c.toFinish ? 'reicht bis zur Zielflagge (noch ca. ' + n(c.lapsToEnd, 1) + ' Rd) – kein Stopp nötig'
+      : 'Box empfohlen Ende Runde ' + c.boxLap + ' (1 Rd Reserve) · spätestens Ende Runde ' + c.boxLast);
+  if (c.toFinish) $('lapsLeft').className = 'big mono ok';
+  $('energy').innerHTML =
+    kv('Sprit', n(lv.fuel, 1) + ' l' + (lv.fuelCap ? ' / ' + n(lv.fuelCap, 0) : '')) +
+    kv('Virtual Energy', lv.ve != null && lv.ve > 0 ? n(lv.ve, 1) + ' %' : '–') +
+    kv('Batterie (Hybrid)', lv.battery ? n(lv.battery, 0) + ' %' : '–') +
+    kv('Ø Sprit/Rd (letzte 5)', c.fuelAvg ? n(c.fuelAvg, 2) + ' l' : '–') +
+    kv('Ø VE/Rd (letzte 5)', c.veAvg ? n(c.veAvg, 2) + ' %' : '–') +
+    kv('Nachfüllen bis voll', (c.fillFull != null ? n(c.fillFull, 1) + ' l' : '–') + (c.veFull != null && lv.ve > 0 ? ' · ' + n(c.veFull, 1) + ' % VE' : '')) +
+    kv('Nachtanken bis Rennende', (c.lapsToEnd != null ? '~' + n(c.lapsToEnd, 1) + ' Rd · ' : '') + (c.fuelToEnd != null ? n(c.fuelToEnd, 1) + ' l' : '–') + (c.veToEnd != null && lv.ve > 0 ? ' · ' + n(c.veToEnd, 0) + ' % VE' : ''));
+
+  var dmg = lv.dents == null ? '–' : (lv.dents ? 'Stufe ' + lv.dents : 'keiner');
+  $('misc').innerHTML =
+    kv('Karosserie/Aero', dmg + (lv.detached ? ' · Teile ab' : ''), lv.detached ? 'bad' : lv.dents ? 'warn' : 'ok') +
+    kv('Reifenschaden', lv.flat ? 'JA' : 'nein', lv.flat ? 'bad' : 'ok') +
+    kv('Wasser', n(lv.water, 0) + ' °C', lv.water > L.wRed ? 'bad' : lv.water > L.wRed - 5 ? 'warn' : '') +
+    kv('Öl', n(lv.oil, 0) + ' °C', lv.oil > L.oRed ? 'bad' : lv.oil > L.oRed - 8 ? 'warn' : '') +
+    kv('Überhitzung', lv.overheat ? 'JA' : 'nein', lv.overheat ? 'bad' : '') +
+    kv('Abstand vorne', (lv.gapAhead ? n(Math.abs(lv.gapAhead), 1) + ' s' : '–') + (lv.ahead ? ' <span class="small">' + esc(lv.ahead) + '</span>' : '')) +
+    kv('Abstand hinten', (lv.gapBehind ? n(Math.abs(lv.gapBehind), 1) + ' s' : '–') + (lv.behind ? ' <span class="small">' + esc(lv.behind) + '</span>' : '')) +
+    kv('Strecke / Luft', n(lv.trackTemp, 1) + ' / ' + n(lv.air, 1) + ' °C') +
+    kv('Regen / Nässe', n(lv.rain, 0) + ' % / ' + n(lv.wet, 0) + ' %', lv.wet > 10 ? 'blue' : '');
+
+  var names = ['VL', 'VR', 'HL', 'HR'], w = lv.wear || [], imo = lv.tyreIMO || [], pr = lv.press || [], br = lv.brake || [], age = lv.tyreLaps || [], tr = c.wearTrend || [];
+  $('tyreInfo').textContent = (lv.compound ? '· ' + lv.compound : '') + (lv.setStints ? ' · Satz im ' + lv.setStints + '. Stint' + (lv.setStints >= 2 ? ' (Doppelstint)' : '') : '');
+  $('wheels').innerHTML = names.map(function (nm, i) {
+    var t = imo[i] || [], all = t.filter(function (x) { return x != null; });
+    return '<div class="wheel"><div style="display:flex;justify-content:space-between"><span class="mute">' + nm + '</span>' +
+      '<span class="small">' + (age[i] != null ? age[i] + ' Rd alt' : '') + '</span></div>' +
+      '<div class="w mono ' + wearCls(w[i]) + '">' + n(w[i], 0) + ' %</div>' +
+      '<div class="small">' + (tr[i] != null ? '−' + n(tr[i], 2) + ' %/Rd' + (tr[i] > 0 && w[i] != null ? ' · noch ~' + n((w[i] - L.tRed) / tr[i], 0) + ' Rd bis ' + L.tRed + ' %' : '') : 'Trend folgt') + '</div>' +
+      '<div class="t3">' + [0, 1, 2].map(function (k) { return '<i style="' + tempBg(t[k]) + '">' + n(t[k], 0) + '°</i>'; }).join('') + '</div>' +
+      '<div class="small">Druck ' + n(pr[i], 1) + ' kPa · Bremse <b class="' + brakeCls(br[i]) + '">' + n(br[i], 0) + ' °C</b></div></div>';
+  }).join('');
+
+  var g = lv.garage, keys = g ? Object.keys(g) : [];
+  $('garageCard').style.display = keys.length ? '' : 'none';
+  $('garage').innerHTML = keys.map(function (k) { return kv(k, n(g[k], 2)); }).join('');
+
+  $('pits').innerHTML = (d.pits || []).map(function (p) {
+    return '<tr><td>' + esc(String(p.time).slice(-8)) + '</td><td>' + esc(p.driver) + '</td><td>' + esc(p.lap) + '</td><td>' + esc(p.lane) + ' s</td><td>' + esc(p.stop) + ' s</td>' +
+      '<td>+' + esc(p.fuel) + ' l</td><td>+' + esc(p.ve) + ' %</td><td>' + esc(p.which || p.tyres) + '</td><td>' + esc(p.repair) + '</td><td>' + esc(p.dmg) + '</td><td>' + esc(p.change) + '</td></tr>';
+  }).join('') || '<tr><td colspan="11" class="mute">noch keine Stopps</td></tr>';
+
+  $('stints').innerHTML = (d.stints || []).map(function (s) {
+    return '<tr><td>' + esc(s.driver) + '</td><td>' + esc(String(s.start).slice(-8, -3)) + '</td><td>' + esc(s.laps) + '</td><td>' + esc(s.best) + '</td><td>' + esc(s.avg) + '</td>' +
+      '<td>' + esc(s.fuel) + '</td><td>' + esc(s.ve) + '</td><td>' + esc(s.wear) + '</td><td>' + esc(s.drop) + '</td></tr>';
+  }).join('') || '<tr><td colspan="9" class="mute">–</td></tr>';
+
+  $('laps').innerHTML = (d.laps || []).map(function (l) {
+    return '<tr><td>' + n(l.lap) + (l.box ? ' 🅿' : '') + '</td><td class="mono">' + lapT(l.sec) + '</td><td>' + n(l.fuel, 1) + '</td><td>' + n(l.fuelUsed, 2) + '</td>' +
+      '<td>' + n(l.ve, 1) + '</td><td>' + n(l.veUsed, 2) + '</td><td>' + l.wear.map(function (x) { return n(x, 0); }).join(' / ') + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" class="mute">–</td></tr>';
+
+  $('foot').textContent = 'Aktualisiert ' + new Date().toLocaleTimeString('de-AT') + ' · alle 10 s · Grenzwerte im Tab „Sync-Einstellungen“';
+}
+
+var seq = 0;
+function load() {
+  var name = 'cb' + (++seq);
+  window[name] = function (d) { delete window[name]; render(d); };
+  var s = document.createElement('script');
+  s.src = API + '?api=box&drv=' + encodeURIComponent(SEL) + '&callback=' + name + '&t=' + Date.now();
+  s.onerror = function () { $('state').textContent = 'Verbindungsfehler'; };
+  document.body.appendChild(s);
+  setTimeout(function () { s.remove(); }, 20000);
+}
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

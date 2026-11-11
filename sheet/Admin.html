@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_blank">
+<meta charset="utf-8">
+<style>
+  body{font:13px/1.45 Roboto,Arial,sans-serif;color:#202124;margin:0;padding:12px}
+  h2{font-size:14px;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #e0e0e0}
+  h2:first-child{margin-top:0}
+  .muted{color:#5f6368;font-size:12px}
+  .drv{border:1px solid #e0e0e0;border-radius:8px;padding:8px;margin-bottom:8px}
+  .drv b{font-size:13px}
+  .st{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:4px}
+  .st.wartet{background:#fef7e0;color:#b06000}
+  .st.freigegeben{background:#e6f4ea;color:#137333}
+  .st.gesperrt{background:#fce8e6;color:#c5221f}
+  .st.aktiv{background:#e8f0fe;color:#1a73e8}
+  .btns{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+  button{font:inherit;font-size:12px;border:1px solid #dadce0;background:#fff;border-radius:4px;padding:4px 9px;cursor:pointer}
+  button.primary{background:#1a73e8;border-color:#1a73e8;color:#fff}
+  button.danger{color:#c5221f}
+  button:disabled{opacity:.5;cursor:default}
+  label{display:block;font-size:12px;color:#5f6368;margin:8px 0 2px}
+  input,select{width:100%;box-sizing:border-box;font:inherit;padding:5px 6px;border:1px solid #dadce0;border-radius:4px}
+  .row{display:flex;gap:6px}
+  .row>*{flex:1}
+  .url{word-break:break-all;font-size:12px;background:#f1f3f4;padding:6px;border-radius:4px}
+  #msg{position:sticky;bottom:0;margin-top:12px;font-size:12px;padding:6px 8px;border-radius:4px;display:none}
+  #msg.ok{display:block;background:#e6f4ea;color:#137333}
+  #msg.err{display:block;background:#fce8e6;color:#c5221f}
+  .upd{border:1px solid #c6dafc;background:#e8f0fe;border-radius:8px;padding:8px 10px;margin-bottom:12px}
+  .upd b{font-size:13px}
+  .upd ul{margin:4px 0 0 16px;padding:0}
+  .upd.warn{border-color:#fbd38d;background:#fef7e0}
+</style>
+</head>
+<body>
+<div id="updBanner"></div>
+<h2>Fahrer &amp; Geräte</h2>
+<div id="drivers" class="muted">lädt…</div>
+
+<h2>Events</h2>
+<div id="events" class="muted">lädt…</div>
+<div class="btns"><button class="primary" id="newEvent">Neues Event planen …</button></div>
+<div class="muted" id="planInfo" style="margin-top:8px"></div>
+<div class="btns"><button id="resetPlan">Plan-Zuordnung zurücksetzen</button></div>
+
+<h2>Einstellungen</h2>
+<div class="row">
+  <div><label>Automatisch eintragen</label><select id="auto"><option>ja</option><option>nein</option></select></div>
+  <div><label>Neue Fahrer sofort frei</label><select id="autoApprove"><option>nein</option><option>ja</option></select></div>
+</div>
+<label>Livestream (YouTube/Twitch-Link)</label>
+<input id="stream" placeholder="leer = kein Video">
+<label>Discord-Webhook</label>
+<input id="discord" placeholder="leer = kein Discord">
+<div class="row">
+  <div><label>Discord-Live-Nachricht</label><select id="discordLive"><option>ja</option><option>nein</option></select></div>
+  <div><label>&nbsp;</label><button id="testDiscord">Discord testen</button></div>
+</div>
+<div class="btns" style="margin-top:10px"><button class="primary" id="save">Speichern</button></div>
+
+<h2>Web-App</h2>
+<div class="muted">Diesen Link in der exe unter „Team-Sheet“ eintragen:</div>
+<div class="url" id="url">–</div>
+<div class="btns">
+  <button id="copy">Link kopieren</button>
+  <button id="deploy">Einrichtungs-Anleitung</button>
+</div>
+<div class="muted" id="links" style="margin-top:6px"></div>
+
+<h2>Updates</h2>
+<div class="muted" id="updInfo">prüfe …</div>
+<div class="btns" id="updBtns"></div>
+
+<div id="msg"></div>
+<div class="muted" style="margin-top:14px" id="ver"></div>
+
+<script>
+var D = null;
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function msg(text, ok) { var m = $('msg'); m.textContent = text; m.className = ok ? 'ok' : 'err'; if (ok) setTimeout(function () { m.className = ''; }, 4000); }
+function busy(on) { Array.prototype.forEach.call(document.querySelectorAll('button'), function (b) { b.disabled = on; }); }
+function call(fn, args, done) {
+  busy(true);
+  var r = google.script.run.withSuccessHandler(function (res) { busy(false); if (done) done(res); })
+    .withFailureHandler(function (e) { busy(false); msg(e.message || String(e), false); });
+  r[fn].apply(r, args || []);
+}
+
+function render(d) {
+  D = d;
+  var list = d.drivers;
+  if (!list.length) {
+    $('drivers').innerHTML = 'Noch keine Anmeldungen. Startet die exe mit dem Web-App-Link, erscheinen die Fahrer hier.';
+  } else {
+    var order = { wartet: 0, freigegeben: 1, gesperrt: 2 };
+    list.sort(function (a, b) { return (order[a.status] || 0) - (order[b.status] || 0); });
+    $('drivers').innerHTML = list.map(function (x) {
+      var b = '';
+      if (x.status !== 'freigegeben') b += '<button class="primary" data-a="freigegeben" data-d="' + esc(x.device) + '">Freigeben</button>';
+      if (x.status !== 'gesperrt') b += '<button data-a="gesperrt" data-d="' + esc(x.device) + '">Sperren</button>';
+      b += '<button data-a="umbenennen" data-d="' + esc(x.device) + '">Umbenennen</button>';
+      b += '<button class="danger" data-a="löschen" data-d="' + esc(x.device) + '">Löschen</button>';
+      return '<div class="drv"><b>' + esc(x.driver) + '</b><span class="st ' + esc(x.status) + '">' + esc(x.status) + '</span>' +
+        '<div class="muted">Gerät ' + esc(String(x.device).slice(0, 8)) + ' · zuletzt ' + esc(x.seen) + (x.version ? ' · v' + esc(x.version) : '') + '</div>' +
+        '<div class="btns">' + b + '</div></div>';
+    }).join('');
+  }
+  var s = d.settings;
+  var ev = d.events || [];
+  $('events').innerHTML = ev.length ? ev.map(function (x) {
+    return '<div class="drv"><b>' + esc(x.name) + '</b>' + (x.active ? '<span class="st aktiv">aktiv</span>' : '') +
+      '<div class="muted">Start ' + esc(x.start || '–') + '</div>' +
+      (x.active ? '' : '<div class="btns"><button data-ev="' + esc(x.name) + '">Als aktives Event setzen</button></div>') + '</div>';
+  }).join('') : 'Noch kein Event. „Neues Event planen“ legt einen Plan-Tab mit allen Stints an.';
+  $('auto').value = (s['Automatisch eintragen'] || 'ja').toLowerCase();
+  $('autoApprove').value = (s['Neue Fahrer automatisch freigeben'] || 'nein').toLowerCase();
+  $('stream').value = s['Stream-URL'] || '';
+  $('discord').value = s['Discord-Webhook'] || '';
+  $('discordLive').value = (s['Discord-Live-Nachricht'] || 'ja').toLowerCase();
+  $('url').textContent = d.url || 'noch nicht bereitgestellt – „Einrichtungs-Anleitung“ klicken';
+  $('links').innerHTML = d.url
+    ? '<a href="' + esc(d.url) + '">Plan-Dashboard</a> · <a href="' + esc(d.url) + '?view=live">Live-Dashboard</a> · <a href="' + esc(d.url) + '?view=box">Mechaniker-Board</a> · <a href="' + esc(d.url) + '?view=map">Strecken-Analyse</a>'
+    : '';
+  var p = d.plan || {};
+  $('planInfo').textContent = p.row ? 'Aktuell wird Zeile ' + p.row + ' befüllt (' + (p.laps || 0) + ' Runden).'
+    : (p.prevRow ? 'Zuletzt abgeschlossen: Zeile ' + p.prevRow + '. Nächster Renn-Stint → erste Zeile ohne Startzeit.' : 'Nächster Renn-Stint → erste Zeile ohne Startzeit.');
+  $('ver').textContent = 'LMU Stint-Sync ' + d.version;
+}
+
+$('drivers').addEventListener('click', function (e) {
+  var b = e.target.closest('button');
+  if (!b) return;
+  var a = b.getAttribute('data-a'), dev = b.getAttribute('data-d');
+  if (a === 'umbenennen') {
+    var n = prompt('Neuer Name:');
+    if (n) call('adminRename', [dev, n], function (d) { render(d); msg('Umbenannt', true); });
+    return;
+  }
+  if (a === 'löschen' && !confirm('Gerät wirklich löschen? Die exe muss sich danach neu anmelden.')) return;
+  call('adminSetStatus', [dev, a], function (d) { render(d); msg('Gespeichert', true); });
+});
+
+$('save').onclick = function () {
+  call('adminSaveSettings', [{
+    'Automatisch eintragen': $('auto').value,
+    'Neue Fahrer automatisch freigeben': $('autoApprove').value, 'Stream-URL': $('stream').value,
+    'Discord-Webhook': $('discord').value, 'Discord-Live-Nachricht': $('discordLive').value
+  }], function (d) { render(d); msg('Einstellungen gespeichert', true); });
+};
+$('testDiscord').onclick = function () { call('adminTestDiscord', [], function (t) { msg(t, true); }); };
+$('resetPlan').onclick = function () {
+  if (confirm('Zuordnung zurücksetzen? Der nächste Renn-Stint landet in der ersten Zeile ohne Startzeit.')) call('adminResetPlan', [], function (d) { render(d); msg('Zurückgesetzt', true); });
+};
+$('events').addEventListener('click', function (e) {
+  var b = e.target.closest('button');
+  if (!b) return;
+  var n = b.getAttribute('data-ev');
+  if (confirm('„' + n + '“ als aktives Event setzen? Neue Renn-Stints werden dann dort eingetragen.')) call('adminActivateEvent', [n], function (d) { render(d); msg('Aktives Event: ' + n, true); });
+});
+$('newEvent').onclick = function () { call('showEventDialog', []); };
+$('deploy').onclick = function () { call('setupAndDeploy', []); };
+$('copy').onclick = function () {
+  if (!D || !D.url) return;
+  var t = document.createElement('textarea'); t.value = D.url; document.body.appendChild(t); t.select();
+  try { document.execCommand('copy'); msg('Link kopiert', true); } catch (e) { msg('Bitte manuell kopieren', false); }
+  t.remove();
+};
+
+
+/* ---------- Updates ---------- */
+function vtxt(v) { return String(v || '').replace('.', ','); }
+function renderUpd(u) {
+  var b = '', info = '', btn = '<button id="updCheck">Nach Updates suchen</button>';
+  if (u.available) {
+    b = '<div class="upd"><b>Update verfügbar: ' + esc(u.current) + ' → ' + esc(u.latest) + '</b>' + (u.date ? ' <span class="muted">(' + esc(u.date) + ')</span>' : '') +
+      (u.notes && u.notes.length ? '<ul>' + u.notes.map(function (h) { return (h.notes || []).map(function (n) { return '<li>' + (u.notes.length > 1 ? '<b>' + esc(h.v) + ':</b> ' : '') + esc(n) + '</li>'; }).join(''); }).join('') + '</ul>' : '') +
+      '<div class="btns"><button class="primary" id="updInstall">Update übernehmen</button></div>' +
+      '<div class="muted" style="margin-top:4px">Dauert ein paar Sekunden. Kein neues Bereitstellen nötig, der Web-App-Link bleibt gleich. Zurück geht jederzeit unter „Updates“.</div></div>';
+  } else if (u.needsTemplate) {
+    b = '<div class="upd warn"><b>Version ' + esc(u.latest) + ' verfügbar</b><div class="muted">Diese Version braucht neue Berechtigungen und lässt sich nicht per Klick übernehmen – bitte die Vorlage neu kopieren.</div></div>';
+  }
+  info = 'Installiert: <b>' + esc(u.current) + '</b>' + (u.active ? ' (per Update, eingebaut ' + esc(u.base) + ')' : '') + '.';
+  if (u.err) info += '<br>Update-Prüfung nicht möglich: ' + esc(u.err);
+  else if (!u.available && !u.needsTemplate) info += ' Das ist die neueste Version.';
+  if (u.loadErr) info += '<br><span style="color:#c5221f">Update konnte nicht geladen werden: ' + esc(u.loadErr) + ' – läuft mit der eingebauten Version.</span>';
+  if (u.active) btn += '<button id="updBack">Zurück auf ' + esc(u.prev || u.base) + '</button>';
+  $('updBanner').innerHTML = b;
+  $('updInfo').innerHTML = info;
+  $('updBtns').innerHTML = btn;
+}
+function checkUpd(force) {
+  google.script.run.withSuccessHandler(renderUpd)
+    .withFailureHandler(function (e) { $('updInfo').textContent = 'Update-Prüfung fehlgeschlagen: ' + (e.message || e); }).adminUpdateCheck(!!force);
+}
+document.addEventListener('click', function (e) {
+  var t = e.target;
+  if (t.id === 'updCheck') { $('updInfo').textContent = 'prüfe …'; checkUpd(true); }
+  if (t.id === 'updInstall') {
+    t.textContent = 'wird übernommen …';
+    call('adminUpdateInstall', [], function (r) { msg('Version ' + r.v + ' ist aktiv – Admin wird neu geladen', true); setTimeout(function () { google.script.run.showAdmin(); }, 1200); });
+  }
+  if (t.id === 'updBack') {
+    if (!t.getAttribute('data-sure')) { t.setAttribute('data-sure', '1'); t.textContent = 'Wirklich zurück? Nochmal klicken'; return; }
+    call('adminUpdateRollback', [false], function (r) { msg('Zurück auf ' + r.v + ' – Admin wird neu geladen', true); setTimeout(function () { google.script.run.showAdmin(); }, 1200); });
+  }
+});
+checkUpd(false);
+
+call('adminData', [], render);
+setInterval(function () { google.script.run.withSuccessHandler(render).adminData(); }, 30000);
+</script>
+</body>
+</html>

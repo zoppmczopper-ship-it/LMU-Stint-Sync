@@ -1,0 +1,7 @@
+*.exe
+lmu-stint-sync.json
+lmu-rest-dump.txt
+token.txt
+exe/testdata/
+.DS_Store
+node_modules/

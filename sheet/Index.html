@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root{--bg:#0e1116;--card:#171b22;--line:#262c36;--text:#e8ecf2;--mute:#8b95a5;
+    --accent:#ff5a1f;--ok:#2fbf71;--warn:#f2b632;--bad:#e5484d;--night:#6c7cff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:640px;margin:0 auto;padding:12px 16px 40px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+  h1{font-size:17px;margin:0;letter-spacing:.3px}
+  select{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;max-width:55%}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-bottom:4px}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .big{font-size:34px;font-weight:700;line-height:1.1}
+  .mid{font-size:22px;font-weight:700}
+  .mono{font-variant-numeric:tabular-nums}
+  .mute{color:var(--mute)}
+  .bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+  .bar>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s}
+  .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--line);color:var(--mute);margin-left:6px;vertical-align:middle}
+  .tag.night{background:rgba(108,124,255,.18);color:var(--night)}
+  .tag.box{background:rgba(242,182,50,.18);color:var(--warn)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid2 .card{margin-bottom:0}
+  .ready{border-color:var(--warn);box-shadow:0 0 0 1px var(--warn) inset}
+  .tyre .pct{font-size:26px;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-weight:600;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:6px 4px;border-bottom:1px solid var(--line)}
+  td{padding:7px 3px;white-space:nowrap;border-bottom:1px solid var(--line)}
+  td.r,th.r{text-align:right}
+  tr.cur td{background:rgba(255,90,31,.12)}
+  tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+  tr.past td{color:var(--mute)}
+  tr.mine td{font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+  .chip{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:99px;padding:5px 11px;font-size:13px}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .late{color:var(--warn)} .early{color:#3fb8ff} .act{color:var(--ok);font-weight:600} b.late,b.early{font-weight:600}
+  .legend{font-size:12px;color:var(--mute);margin-top:8px}
+  .foot{font-size:12px;color:var(--mute);text-align:center;margin-top:8px}
+  .err{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🏁 24h Live</h1>
+    <select id="tabSel" aria-label="Planung"></select>
+  </header>
+
+  <div class="card">
+    <div class="row"><div class="lbl" id="phaseLbl">Rennzeit</div><div class="mono mute" id="clock"></div></div>
+    <div class="row"><div class="big mono" id="raceMain">–</div><div class="mono mute" id="raceSub"></div></div>
+    <div class="bar"><i id="raceBar" style="width:0"></i></div>
+  </div>
+
+  <div class="card" id="nowCard">
+    <div class="lbl" id="nowLbl">Am Steuer</div>
+    <div class="row"><div class="big" id="nowDriver">–</div><div class="mono mid" id="nowLeft"></div></div>
+    <div class="mute mono" id="nowInfo"></div>
+    <div class="bar"><i id="stintBar" style="width:0"></i></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card" id="nextCard">
+      <div class="lbl">Als Nächstes</div>
+      <div class="mid" id="nextDriver">–</div>
+      <div class="mute mono" id="nextInfo"></div>
+    </div>
+    <div class="card tyre" id="tyreCard">
+      <div class="lbl" id="tyreLbl">Reifen</div>
+      <div class="pct mono" id="tyrePct">–</div>
+      <div class="mute" id="tyreText" style="font-size:12.5px"></div>
+    </div>
+  </div>
+  <div style="height:12px"></div>
+
+  <div class="card" id="notesCard" style="display:none">
+    <div class="lbl">Letzte Notiz</div>
+    <div id="notesText" style="font-size:14px"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Fahrer</div>
+    <table><thead><tr><th>Fahrer</th><th class="r">Stints</th><th class="r">Fahrzeit</th><th class="r">Nacht</th><th class="r">Nächster</th></tr></thead>
+    <tbody id="drvBody"></tbody></table>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Stintplan</div>
+    <div class="chips" id="chips"></div>
+    <table style="font-size:12.5px"><thead><tr><th>#</th><th>Fahrer</th><th>Plan</th><th>Ist / Neu</th><th class="r">Versch.</th></tr></thead>
+    <tbody id="planBody"></tbody></table>
+    <div class="legend">✓ = Ist-Zeit · <span class="act">grün</span> = wie geplant · <span class="late">gelb</span> = später als geplant · <span class="early">blau</span> = früher als geplant</div>
+  </div>
+
+  <div class="foot" id="foot">Lade…</div>
+</div>
+
+<script>
+let D = null, offset = 0, tab = <?= JSON.stringify(initialTab) ?>, filter = '';
+try { filter = localStorage.getItem('drv') || ''; } catch (e) {}
+const $ = id => document.getElementById(id);
+const norm = s => (s || '').trim().toLowerCase();
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+function hms(sec, withH) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  const p = n => String(n).padStart(2, '0');
+  return (h || withH ? h + ':' + p(m) : m) + ':' + p(s);
+}
+function hm(sec) { const h = Math.floor(sec / 3600), m = Math.round(sec % 3600 / 60); return h + 'h' + String(m).padStart(2, '0'); }
+const isNight = st => /nacht/i.test(st.hint);
+const tags = st => (isNight(st) ? '<span class="tag night">Nacht</span>' : '') + (st.tz === 'MEZ' ? '' : '');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function load() {
+  google.script.run.withSuccessHandler(d => {
+    D = d; tab = d.tab; offset = d.serverNow - Date.now(); applyActuals();
+    $('tabSel').innerHTML = d.tabs.map(t => `<option ${t === d.tab ? 'selected' : ''}>${esc(t)}</option>`).join('');
+    renderStatic(); tick();
+    $('foot').textContent = 'Aktualisiert ' + new Date().toLocaleTimeString('de-AT') + ' · alle 30 s automatisch · v4';
+    if (d.stints[0] && !('actStart' in d.stints[0])) $('foot').innerHTML += '<br><span class="err">Code.gs ist noch die alte Version – bitte ersetzen und neue Version bereitstellen.</span>';
+  }).withFailureHandler(err => { $('foot').innerHTML = '<span class="err">Fehler: ' + esc(err.message || err) + '</span>'; })
+    .getData(tab);
+}
+$('tabSel').onchange = e => { tab = e.target.value; load(); };
+
+// Ist-Zeiten (Spalte N/O) übernehmen und alle folgenden Stints verschieben
+const wrap = x => ((x + 43200) % 86400 + 86400) % 86400 - 43200;
+const clk = s => { s = ((Math.round(s) % 86400) + 86400) % 86400; return String(Math.floor(s / 3600)).padStart(2, '0') + ':' + String(Math.floor(s % 3600 / 60)).padStart(2, '0'); };
+function applyActuals() {
+  let delta = 0;
+  D.stints.forEach(s => {
+    const pB = s.begin, pE = s.end;
+    s.planBegin = s.beginLocalSec != null ? clk(s.beginLocalSec) : s.beginLocal;
+    s.planEnd = s.endLocalSec != null ? clk(s.endLocalSec) : s.endLocal;
+    let dB = delta;
+    s.isActB = s.actStart != null && s.beginLocalSec != null;
+    if (s.isActB) { dB = wrap(s.actStart - s.beginLocalSec); delta = dB; }
+    let dE = delta;
+    s.isActE = s.actEnd != null && s.endLocalSec != null;
+    if (s.isActE) { dE = wrap(s.actEnd - s.endLocalSec); delta = dE; }
+    s.begin = pB + dB; s.end = Math.min(pE + dE, D.durationSec);
+    s.shiftB = dB; s.shiftE = dE;
+    if (s.beginLocalSec != null) s.beginLocal = clk(s.beginLocalSec + dB);
+    if (s.endLocalSec != null) s.endLocal = clk(s.endLocalSec + dE);
+  });
+  D.shift = delta;
+}
+function shiftTag(d) {
+  if (Math.abs(d) < 30) return '';
+  const m = Math.round(Math.abs(d) / 60);
+  return `<span class="${d > 0 ? 'late' : 'early'}">${d > 0 ? '+' : '−'}${m}′</span>`;
+}
+
+function elapsed() { return (Date.now() + offset - D.startMs) / 1000; }
+function curIndex(e) {
+  const S = D.stints;
+  for (let i = S.length - 1; i >= 0; i--) if (e >= S[i].begin) return i;
+  return -1;
+}
+
+function renderStatic() {
+  // Fahrerübersicht
+  const map = {};
+  D.stints.forEach(st => {
+    const k = norm(st.driver); if (!k) return;
+    const o = map[k] || (map[k] = { name: cap(st.driver), n: 0, sec: 0, night: 0 });
+    o.n++; o.sec += st.end - st.begin; if (isNight(st)) o.night++;
+  });
+  D._drivers = map;
+  const names = Object.keys(map);
+  $('chips').innerHTML = ['', ...names].map(k => `<button class="chip ${k === filter ? 'on' : ''}" data-k="${esc(k)}">${k ? esc(map[k].name) : 'Alle'}</button>`).join('');
+  $('chips').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    filter = b.dataset.k; try { localStorage.setItem('drv', filter); } catch (e) {}
+    renderStatic(); tick();
+  });
+}
+
+function tick() {
+  if (!D) return;
+  const e = elapsed(), S = D.stints, dur = D.durationSec;
+  const now = new Date(Date.now() + offset);
+  $('clock').textContent = now.toLocaleTimeString('de-AT', { timeZone: 'Europe/Vienna' });
+  const i = curIndex(e), st = S[i], nx = S[i + 1];
+
+  // Renn-Karte
+  if (e < 0) {
+    var nowMs = Date.now() + offset, ses = (D.sessions || []).filter(function (x) { return nowMs >= x.start && nowMs < x.end; })[0];
+    var hhmm = function (ms) { return new Date(ms).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna' }); };
+    var nextS = (D.sessions || []).filter(function (x) { return x.start > nowMs && x.name !== 'Pause'; })[0];
+    $('phaseLbl').textContent = ses ? (ses.name === 'Pause' ? 'Pause – Rennstart in' : ses.name + ' läuft · Rennstart in') : (nextS ? nextS.name + ' ' + hhmm(nextS.start) + ' · Rennstart in' : 'Start in');
+    $('raceMain').textContent = hms(-e, true);
+    $('raceSub').textContent = ses ? ses.name + ' bis ' + hhmm(ses.end) : new Date(D.startMs).toLocaleString('de-AT', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vienna' });
+    $('raceBar').style.width = '0';
+  } else if (e >= dur) {
+    $('phaseLbl').textContent = 'Rennen';
+    $('raceMain').textContent = 'Beendet 🏁';
+    $('raceSub').textContent = '';
+    $('raceBar').style.width = '100%';
+  } else {
+    $('phaseLbl').textContent = 'Rennzeit';
+    $('raceMain').textContent = hms(e, true);
+    $('raceSub').textContent = 'noch ' + hms(dur - e, true);
+    $('raceBar').style.width = (e / dur * 100).toFixed(2) + '%';
+  }
+
+  // Aktueller Stint
+  if (e < 0) {
+    const f = S[0];
+    $('nowLbl').textContent = 'Startfahrer';
+    $('nowDriver').innerHTML = esc(cap(f.driver)) + tags(f);
+    $('nowLeft').textContent = '';
+    $('nowInfo').textContent = `Stint 1/${S.length} · ${f.beginLocal}–${f.endLocal} · ${f.laps} Rd.`;
+    $('stintBar').style.width = '0';
+  } else if (!st || e >= dur) {
+    $('nowLbl').textContent = 'Am Steuer'; $('nowDriver').textContent = '—'; $('nowLeft').textContent = ''; $('nowInfo').textContent = ''; $('stintBar').style.width = '100%';
+  } else {
+    const inBox = e >= st.end;
+    $('nowLbl').textContent = inBox ? 'Boxenstopp' : `Am Steuer · Stint ${st.nr}/${S.length}`;
+    $('nowDriver').innerHTML = esc(cap(inBox && nx ? nx.driver : st.driver)) + (inBox ? '<span class="tag box">BOX</span>' : tags(st));
+    $('nowLeft').textContent = inBox ? (nx ? hms(nx.begin - e) : '') : hms(st.end - e);
+    $('nowInfo').textContent = inBox ? 'Fahrerwechsel läuft' : `${st.beginLocal}–${st.endLocal} · ${st.laps} Rd.` + (st.hint && !isNight(st) ? ' · ' + st.hint : '');
+    $('stintBar').style.width = inBox ? '100%' : ((e - st.begin) / (st.end - st.begin) * 100).toFixed(2) + '%';
+  }
+
+  // Nächster Fahrer
+  const n = e < 0 ? S[1] : nx;
+  if (n) {
+    const until = n.begin - e;
+    $('nextDriver').innerHTML = esc(cap(n.driver)) + tags(n);
+    $('nextInfo').innerHTML = `${n.beginLocal} ${shiftTag(n.shiftB)} · in ${hms(until, until >= 3600)}`;
+    $('nextCard').classList.toggle('ready', until > 0 && until < 15 * 60 && e >= 0);
+  } else { $('nextDriver').textContent = '—'; $('nextInfo').textContent = 'Zielflagge'; $('nextCard').classList.remove('ready'); }
+
+  // Reifen: letzter Stint mit Eintrag
+  let t = null; for (let k = S.length - 1; k >= 0; k--) if (S[k].tyrePct) { t = S[k]; break; }
+  if (t) {
+    const p = parseFloat(t.tyrePct.replace(',', '.'));
+    $('tyreLbl').textContent = 'Reifen · Stint ' + t.nr;
+    $('tyrePct').textContent = t.tyrePct;
+    $('tyrePct').style.color = isNaN(p) ? '' : p >= 60 ? 'var(--ok)' : p >= 30 ? 'var(--warn)' : 'var(--bad)';
+    $('tyreText').textContent = (t.tyreText.split(':')[0] || '').slice(0, 60);
+  } else { $('tyrePct').textContent = '–'; $('tyreText').textContent = 'noch kein Eintrag'; }
+
+  let nt = null; for (let k = S.length - 1; k >= 0; k--) if (S[k].notes) { nt = S[k]; break; }
+  $('notesCard').style.display = nt ? '' : 'none';
+  if (nt) $('notesText').textContent = `Stint ${nt.nr} (${cap(nt.driver)}): ${nt.notes}`;
+
+  // Fahrertabelle (nächster Einsatz)
+  const nextOf = {};
+  S.forEach(s => { const k = norm(s.driver); if (s.begin > e && !(k in nextOf)) nextOf[k] = s; });
+  $('drvBody').innerHTML = Object.entries(D._drivers).map(([k, o]) =>
+    `<tr class="${k === filter ? 'mine' : ''}"><td>${esc(o.name)}</td><td class="r mono">${o.n}</td><td class="r mono">${hm(o.sec)}</td><td class="r mono">${o.night}</td><td class="r mono">${nextOf[k] ? nextOf[k].beginLocal : (st && norm(st.driver) === k && e < st.end ? 'jetzt' : '–')}</td></tr>`).join('');
+
+  // Stintplan (nur neu zeichnen, wenn Stint wechselt)
+  const key = i + '|' + filter + '|' + D.tab + '|' + D.serverNow;
+  if ($('planBody').dataset.key !== key) {
+    $('planBody').dataset.key = key;
+    $('planBody').innerHTML = S.filter(s => !filter || norm(s.driver) === filter).map(s => {
+      const cls = s === st && e < dur ? 'cur' : (s.end <= e ? 'past' : '');
+      const t = (v, act, d) => act ? `<b class="${Math.abs(d) < 60 ? 'act' : d > 0 ? 'late' : 'early'}">${v}✓</b>` : (Math.abs(d) >= 30 ? `<span class="${d > 0 ? 'late' : 'early'}">${v}</span>` : v);
+      const d = s.shiftB, dTxt = Math.abs(d) < 30 ? '±0' : (d > 0 ? '+' : '−') + Math.round(Math.abs(d) / 60) + '′';
+      return `<tr class="${cls}"><td class="mono">${s.nr}</td><td>${esc(cap(s.driver))}${isNight(s) ? ' 🌙' : ''}</td><td class="mono mute">${s.planBegin}–${s.planEnd}</td><td class="mono">${t(s.beginLocal, s.isActB, s.shiftB)}–${t(s.endLocal, s.isActE, s.shiftE)}</td><td class="r mono ${Math.abs(d) < 30 ? 'mute' : d > 0 ? 'late' : 'early'}">${dTxt}</td></tr>`;
+    }).join('');
+  }
+}
+
+load();
+setInterval(tick, 1000);
+setInterval(load, 30000);
+</script>
+</body>
+</html>

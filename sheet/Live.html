@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root{--bg:#0e1116;--card:#171b22;--line:#262c36;--text:#e8ecf2;--mute:#8b95a5;
+    --accent:#ff5a1f;--ok:#2fbf71;--warn:#f2b632;--bad:#e5484d;--blue:#3fb8ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:12px 16px 40px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  h1{font-size:17px;margin:0}
+  .pill{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--line);color:var(--mute)}
+  .pill.on{background:rgba(47,191,113,.18);color:var(--ok)}
+  .pill.off{background:rgba(229,72,77,.18);color:var(--bad)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-bottom:4px}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .big{font-size:30px;font-weight:700;line-height:1.1}
+  .mid{font-size:20px;font-weight:700}
+  .mono{font-variant-numeric:tabular-nums}
+  .mute{color:var(--mute)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .grid2 .card{margin:0}
+  .tyres{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tyre{border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+  .tyre b{font-size:20px;display:block}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-weight:600;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 3px;border-bottom:1px solid var(--line)}
+  td{padding:6px 3px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .r{text-align:right}
+  .scroll{overflow-x:auto}
+  .bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:6px}
+  .bar>i{display:block;height:100%;border-radius:99px}
+  .ev{font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .foot{font-size:12px;color:var(--mute);text-align:center;margin-top:8px}
+  .best{color:#c58bff;font-weight:700}
+  .fld td,.fld th{padding:5px 4px}
+  .fld tr.me td{background:rgba(255,90,31,.14)}
+  .fld tr.me td:first-child{box-shadow:inset 3px 0 0 #ff5a1f}
+  .fld .o{font-size:11px;color:#8b95a5}
+  .fld td.cls{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8b95a5;padding-top:10px}
+  .fld .ahead{color:#f2b632}.fld .behind{color:#3fb8ff}
+  .tgl{font:inherit;font-size:12px;background:transparent;color:#8b95a5;border:1px solid #262c36;border-radius:99px;padding:2px 10px;cursor:pointer}
+  .tgl.on{color:#e8ecf2;border-color:#8b95a5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>🏁 LMU Live</h1><span class="pill" id="state">lädt…</span></header>
+  <div id="cars" style="display:none;gap:6px;flex-wrap:wrap;margin:-4px 0 10px"></div>
+  <div class="row" style="margin:-4px 0 10px;font-size:13px"><span class="mute" id="evInfo"></span><label class="mute" style="white-space:nowrap"><input type="checkbox" id="showAll"> alle Daten</label></div>
+  <div class="card" id="noEvent" style="display:none"><div class="lbl">Kein aktives Rennen</div><div id="noEventTxt" class="mute"></div></div>
+
+  <div class="card" id="streamCard" style="display:none;padding:0;overflow:hidden">
+    <div style="position:relative;padding-top:56.25%"><div id="stream" style="position:absolute;inset:0"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><div class="lbl" id="sess">–</div><div class="mono mute" id="remain"></div></div>
+    <div class="row"><div class="big" id="driver">–</div><div class="big mono" id="pos"></div></div>
+    <div class="row mute mono" style="font-size:13px"><span id="car"></span><span id="classpos"></span></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="lbl">Letzte / Beste</div>
+      <div class="mid mono" id="last">–</div>
+      <div class="mono best" id="best"></div>
+      <div class="mute mono" style="font-size:13px" id="stintinfo"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Energie</div>
+      <div class="mid mono" id="energy">–</div>
+      <div class="mute mono" style="font-size:13px" id="perlap"></div>
+      <div class="mono" style="font-size:13px;margin-top:2px" id="lapsleft"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="lbl">Reifen (Rest %)</div>
+      <div class="tyres" id="tyres"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Abstände (Position)</div>
+      <div class="mono" style="font-size:13px">vor: <b id="gapA">–</b><div class="mute" id="ahead"></div></div>
+      <div class="mono" style="font-size:13px;margin-top:6px">hinter: <b id="gapB">–</b><div class="mute" id="behind"></div></div>
+      <div class="mute" style="font-size:12px;margin-top:8px" id="weather"></div>
+    </div>
+  </div>
+
+  <div class="card" id="fieldCard" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+      <div class="lbl" style="margin:0">Klassement · Abstände</div>
+      <div><button class="tgl on" id="fMine">Meine Klasse</button> <button class="tgl" id="fAll">Alle</button></div>
+    </div>
+    <div class="scroll"><table class="fld"><thead><tr><th>Pos</th><th>Fahrer · Auto</th><th class="r">Rd</th><th class="r">zum Führ.</th><th class="r">Intervall</th><th class="r">zu mir</th><th class="r">Letzte</th><th class="r">Beste</th><th class="r">Stopps</th></tr></thead><tbody id="fieldBody"></tbody></table></div>
+    <div class="small mute" id="fieldInfo" style="font-size:12px;margin-top:6px"></div>
+  </div>
+  <div class="card">
+    <div class="lbl">Runden im aktuellen Stint</div>
+    <div class="scroll"><table><thead><tr><th>Rd.</th><th>Zeit</th><th>S1</th><th>S2</th><th>S3</th><th class="r">Sprit/Rd</th><th class="r">VE/Rd</th><th class="r">Reifen Ø</th></tr></thead><tbody id="laps"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Stints</div>
+    <div class="scroll"><table><thead><tr><th>Fahrer</th><th>Start</th><th>Ende</th><th class="r">Rd.</th><th>Beste</th><th>Ø</th><th class="r">Box</th><th>Reifen Ende</th></tr></thead><tbody id="stints"></tbody></table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><div class="lbl">Boxenstopps</div><div id="pits"></div></div>
+    <div class="card"><div class="lbl">Ereignisse</div><div id="events"></div></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lap = s => { if (!s || s <= 0) return '–'; const m = Math.floor(s / 60); return m + ':' + ('0' + (s - m * 60).toFixed(3)).slice(-6); };
+const hms = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0'); };
+const wcls = v => v >= 60 ? 'ok' : v >= 30 ? 'warn' : 'bad';
+const time = s => (s || '').split(' ')[1] ? (s.split(' ')[1]).slice(0, 5) : s;
+
+let curStream = null;
+function embedUrl(u) {
+  let m;
+  const host = location.hostname;
+  if ((m = u.match(/(?:youtube\.com\/(?:watch\?v=|live\/|embed\/)|youtu\.be\/)([\w-]{6,})/))) return 'https://www.youtube.com/embed/' + m[1] + '?autoplay=1&mute=1';
+  if ((m = u.match(/youtube\.com\/channel\/(UC[\w-]+)/))) return 'https://www.youtube.com/embed/live_stream?channel=' + m[1] + '&autoplay=1&mute=1';
+  if ((m = u.match(/twitch\.tv\/(?:videos\/(\d+)|([\w]+))/))) {
+    const parents = ['parent=' + host, 'parent=script.google.com', 'parent=script.googleusercontent.com'].join('&');
+    const base = 'https://player.twitch.tv/?';
+    return base + (m[1] ? 'video=' + m[1] : 'channel=' + m[2]) + '&' + parents + '&muted=true';
+  }
+  return null;
+}
+function renderStream(u) {
+  if (u === curStream) return;
+  curStream = u;
+  $('streamCard').style.display = u ? '' : 'none';
+  if (!u) { $('stream').innerHTML = ''; return; }
+  const e = embedUrl(u);
+  $('stream').innerHTML = e
+    ? `<iframe src="${esc(e)}" style="width:100%;height:100%;border:0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`
+    : `<a href="${esc(u)}" target="_blank" style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--text)">▶ Livestream öffnen</a>`;
+}
+
+
+/* ---------- Klassement ---------- */
+var FIELD_ALL = false, FIELD_LAST = null;
+function fEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function fLap(s) { if (!s || s <= 0) return '–'; var m = Math.floor(s / 60); return m + ':' + ('0' + (s - m * 60).toFixed(3)).slice(-6); }
+function fNum(t) { return Math.abs(t).toFixed(1).replace('.', ','); }
+function fGap(t, l) { if (l) return '+' + l + ' Rd'; if (t == null) return ''; return '+' + fNum(t); }
+function fRel(t, l) { if (l) return (l > 0 ? '+' : '−') + Math.abs(l) + ' Rd'; if (t == null) return ''; return (t < 0 ? '−' : '+') + fNum(t); }
+function renderField(f) {
+  FIELD_LAST = f;
+  var card = document.getElementById('fieldCard');
+  if (!f || !f.rows || !f.rows.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  var race = /renn/i.test(f.session || ''), me = f.rows.filter(function (r) { return r.me; })[0], cls = me ? me.c : (f.cls || f.rows[0].c);
+  var rows = FIELD_ALL ? f.rows : f.rows.filter(function (r) { return r.c === cls; });
+  var lead = {};
+  f.rows.forEach(function (r) { if (r.p === 1) lead[r.c] = r; });
+  var meBest = me && me.best > 0 ? me.best : null, prev = null, prevCls = null, h = '';
+  rows.forEach(function (r) {
+    if (r.c !== prevCls) { prev = null; prevCls = r.c; if (FIELD_ALL) h += '<tr><td colspan="9" class="cls">' + fEsc(r.c) + '</td></tr>'; }
+    var g, gi, gp, L = lead[r.c];
+    if (race) {
+      g = r.p === 1 ? 'Führend' : fGap(r.gl, r.gll);
+      gi = r.p === 1 ? '' : fGap(r.gi, r.gil);
+      gp = r.me ? 'ich' : (r.gp != null || r.gpl ? fRel(r.gp, r.gpl) : '');
+    } else {
+      g = r.p === 1 ? 'Bestzeit' : (r.best > 0 && L && L.best > 0 ? fGap(r.best - L.best, 0) : '–');
+      gi = prev && r.best > 0 && prev.best > 0 ? fGap(r.best - prev.best, 0) : '';
+      gp = r.me ? 'ich' : (meBest && r.best > 0 && r.c === cls ? fRel(r.best - meBest, 0) : '');
+    }
+    prev = r;
+    var rel = gp.charAt(0) === '−' ? 'ahead' : gp.charAt(0) === '+' ? 'behind' : '';
+    h += '<tr class="' + (r.me ? 'me' : '') + '"><td><b>' + r.p + '</b><div class="o">P' + r.o + '</div></td>' +
+      '<td>' + (r.box ? '🅿 ' : '') + (r.fin ? '🏁 ' : '') + fEsc(r.n) + '<div class="o">' + fEsc(r.v) + (r.pen ? ' · ' + r.pen + ' Strafe' : '') + (r.ff != null ? ' · ⛽ ' + Math.round(r.ff) + ' %' : '') + (r.sv != null && race ? ' · Start-VE ' + Math.round(r.sv) + ' %' + (r.sl > 0 ? ' (ab Rd ' + r.sl + ')' : '') : '') + '</div></td>' +
+      '<td class="r">' + (r.l != null ? r.l : '') + '</td><td class="r">' + g + '</td><td class="r">' + gi + '</td>' +
+      '<td class="r ' + rel + '"><b>' + gp + '</b></td><td class="r">' + fLap(r.last) + '</td><td class="r">' + fLap(r.best) + '</td><td class="r">' + (r.pits || 0) + '</td></tr>';
+  });
+  document.getElementById('fieldBody').innerHTML = h;
+  document.getElementById('fieldInfo').textContent = (race ? 'Rennen: Abstände nach Rennzeit' : (f.session || 'Session') + ': Abstände nach Bestzeit') +
+    ' · zu mir: − = vor mir, + = hinter mir · ' + (FIELD_ALL ? f.rows.length + ' Autos' : rows.length + ' Autos in ' + cls) +
+    (f.ts ? ' · Stand ' + new Date(f.ts).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
+}
+document.getElementById('fMine').onclick = function () { FIELD_ALL = false; this.className = 'tgl on'; document.getElementById('fAll').className = 'tgl'; renderField(FIELD_LAST); };
+document.getElementById('fAll').onclick = function () { FIELD_ALL = true; this.className = 'tgl on'; document.getElementById('fMine').className = 'tgl'; renderField(FIELD_LAST); };
+
+var SHOW_ALL = false;
+/* ---------- Auswahl, wenn mehrere Fahrer gleichzeitig fahren ---------- */
+var SEL = (function () { try { return localStorage.getItem('lmuSel') || ''; } catch (e) { return ''; } })();
+function renderCars(d) {
+  var el = document.getElementById('cars'); if (!el) return;
+  if (d.sel) { SEL = d.sel; try { localStorage.setItem('lmuSel', SEL); } catch (e) { /* egal */ } }
+  var cs = d.cars || [];
+  if (cs.length < 2) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  var e = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  el.style.display = 'flex';
+  el.innerHTML = cs.map(function (c) {
+    var num = (String(c.car || '').match(/#\s*\d+/) || [''])[0];
+    return '<button class="tgl' + (c.drv === d.sel ? ' on' : '') + '" data-d="' + e(c.drv) + '" title="' + e(c.car) + '">' +
+      (c.active ? '🟢 ' : '⚪ ') + '<b>' + e(c.drv) + '</b> · ' + e(c.track) + ' · ' + e(c.session) + (num ? ' · ' + e(num) : '') + '</button>';
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('button'), function (b) {
+    b.onclick = function () { SEL = b.getAttribute('data-d'); try { localStorage.setItem('lmuSel', SEL); } catch (x) { /* egal */ } load(); };
+  });
+}
+function render(d) {
+  renderCars(d);
+  renderStream(d.stream || '');
+  var fmtT = function (ms) { return new Date(ms).toLocaleString('de-AT', { timeZone: 'Europe/Vienna', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+  $('evInfo').textContent = d.event ? 'Event „' + d.event.name + '“ · Rennstart ' + fmtT(d.event.race) : (d.filtered ? '' : 'alle Daten (ohne Event-Filter)');
+  $('noEvent').style.display = d.filtered && !d.event ? '' : 'none';
+  $('noEventTxt').textContent = d.next ? 'Nächstes Event: „' + d.next.name + '“ – ' + fmtT(d.next.start) + '. Das Dashboard zeigt nur Daten des laufenden Events.'
+    : 'Kein Event geplant. Startet ein Rennen, legt das Sheet automatisch ein Event an.';
+  renderField(d.field);
+  const L = d.live, age = L ? (d.now - Date.parse(L.ts)) / 1000 : 1e9;
+  const on = age < 60;
+  $('state').className = 'pill ' + (on ? 'on' : 'off');
+  $('state').textContent = on ? 'LIVE' : (L ? 'keine Live-Daten seit ' + hms(age) : 'noch keine Daten');
+  if (L) {
+    $('sess').textContent = `${L.session} · ${L.track}`;
+    $('remain').textContent = L.remaining > 0 ? 'Rest ' + hms(L.remaining) : '';
+    $('driver').textContent = L.driver + (L.inPits ? ' 🅿' : '');
+    $('pos').textContent = 'P' + L.place;
+    $('car').textContent = `${L.car} (${L.class})`;
+    $('classpos').textContent = 'Klasse P' + L.classPlace + (L.penalties ? ` · ${L.penalties} Strafe(n)` : '');
+    $('last').textContent = lap(L.last);
+    $('best').textContent = L.best > 0 ? 'Beste ' + lap(L.best) : '';
+    const since = L.stintStart ? (d.now - Date.parse(L.stintStart)) / 1000 : 0;
+    $('stintinfo').textContent = `Stint: ${L.stintLaps} Rd. · ${hms(since)}`;
+    $('energy').textContent = (L.ve > 0 ? L.ve.toFixed(1) + ' % VE · ' : '') + L.fuel.toFixed(1) + ' l';
+    $('perlap').textContent = L.fuelPerLap ? `${L.fuelPerLap.toFixed(2)} l/Rd` + (L.vePerLap ? ` · ${L.vePerLap.toFixed(2)} % VE/Rd` : '') : 'Verbrauch: nach 1. sauberer Runde';
+    $('lapsleft').innerHTML = L.lapsLeft != null ? `reicht noch <b class="${L.lapsLeft < 2 ? 'bad' : L.lapsLeft < 4 ? 'warn' : 'ok'}">${L.lapsLeft.toFixed(1)} Runden</b>` : '';
+    const names = ['VL', 'VR', 'HL', 'HR'];
+    $('tyres').innerHTML = (L.wear || []).map((w, i) => `<div class="tyre"><span class="mute" style="font-size:11px">${names[i]}</span><b class="mono ${wcls(w)}">${Math.round(w)}%</b><span class="mute mono" style="font-size:11px">${L.tyreTemp ? Math.round(L.tyreTemp[i]) + ' °C' : ''}</span></div>`).join('');
+    $('gapA').textContent = L.gapAhead ? Math.abs(L.gapAhead).toFixed(1) + ' s' : '–';
+    $('gapB').textContent = L.gapBehind ? Math.abs(L.gapBehind).toFixed(1) + ' s' : '–';
+    $('ahead').textContent = L.ahead || '';
+    $('behind').textContent = L.behind || '';
+    $('weather').textContent = `Luft ${L.air} °C · Strecke ${L.trackTemp} °C` + (L.rain > 0 ? ` · Regen ${Math.round(L.rain)} %` : '') + (L.wet > 0 ? ` · nass ${Math.round(L.wet)} %` : '');
+  }
+  // laps of current stint: columns per sheet "Runden"
+  let bestLap = Infinity;
+  const lapSec = t => { const m = String(t).match(/(\d+):(\d+(?:[.,]\d+)?)/); return m ? (+m[1]) * 60 + parseFloat(m[2].replace(',', '.')) : NaN; };
+  d.laps.forEach(r => { const s = lapSec(r[5]); if (s > 0 && r[10] !== 'ja') bestLap = Math.min(bestLap, s); });
+  $('laps').innerHTML = d.laps.map(r => {
+    const s = lapSec(r[5]);
+    const w = [15, 16, 17, 18].map(i => parseFloat(String(r[i]).replace(',', '.'))).filter(x => !isNaN(x));
+    const avg = w.length ? w.reduce((a, b) => a + b, 0) / w.length : NaN;
+    return `<tr><td class="mono">${esc(r[4])}${r[10] === 'ja' ? ' 🅿' : ''}</td><td class="mono ${s === bestLap ? 'best' : ''}">${esc(r[5])}</td><td class="mono mute">${esc(r[7])}</td><td class="mono mute">${esc(r[8])}</td><td class="mono mute">${esc(r[9])}</td><td class="r mono">${esc(r[12])}</td><td class="r mono">${esc(r[14])}</td><td class="r mono ${isNaN(avg) ? '' : wcls(avg)}">${isNaN(avg) ? '' : Math.round(avg) + '%'}</td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="mute">noch keine Runden</td></tr>';
+  $('stints').innerHTML = d.stints.map(r => `<tr><td>${esc(r[1])}</td><td class="mono">${esc(time(r[6]))}</td><td class="mono">${esc(time(r[7])) || '<span class="ok">läuft</span>'}</td><td class="r mono">${esc(r[8])}</td><td class="mono">${esc(r[9])}</td><td class="mono">${esc(r[10])}</td><td class="r mono">${esc(r[11])}</td><td class="mono mute">${esc(r[20])}</td></tr>`).join('') || '<tr><td colspan="8" class="mute">noch keine Stints</td></tr>';
+  $('pits').innerHTML = d.pits.map(r => `<div class="ev"><b class="mono">${esc(time(r[0]))}</b> ${esc(r[2])} · Rd. ${esc(r[3])}<br><span class="mute">${esc(r[4])} s Gasse · ${esc(r[5])} s Stand · ${esc(r[6])} l · Reifen: ${esc(r[8])}${r[9] === 'ja' ? ' · Reparatur' : ''}</span></div>`).join('') || '<div class="mute">–</div>';
+  $('events').innerHTML = d.events.map(r => `<div class="ev"><b class="mono">${esc(time(r[0]))}</b> ${esc(r[2])} · ${esc(r[4])}<br><span class="mute">${esc(r[5])}</span></div>`).join('') || '<div class="mute">–</div>';
+  $('foot').textContent = 'Aktualisiert ' + new Date().toLocaleTimeString('de-AT') + ' · alle 10 s';
+}
+
+const API = <?!= JSON.stringify(apiUrl) ?>;
+let jsonpN = 0;
+function load() {
+  const name = '__lmu' + (++jsonpN);
+  const s = document.createElement('script');
+  const done = () => { clearTimeout(timer); delete window[name]; s.remove(); };
+  const timer = setTimeout(() => { done(); $('foot').textContent = 'Keine Antwort vom Sheet – neuer Versuch in 10 s'; }, 25000);
+  window[name] = d => { done(); try { render(d); } catch (e) { $('foot').textContent = 'Fehler: ' + e.message; } };
+  s.onerror = () => { done(); $('foot').textContent = 'Fehler beim Laden – neuer Versuch in 10 s'; };
+  s.src = API + '?api=1' + (SHOW_ALL ? '&all=1' : '') + '&drv=' + encodeURIComponent(SEL) + '&callback=' + name + '&t=' + Date.now();
+  document.body.appendChild(s);
+}
+$('showAll').onchange = function () { SHOW_ALL = this.checked; load(); };
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_blank">
+<meta charset="utf-8">
+<style>
+  body{font:13px/1.5 Roboto,Arial,sans-serif;color:#202124;margin:0;padding:4px 6px}
+  ol{padding-left:20px;margin:6px 0 12px}
+  li{margin:5px 0}
+  b{font-weight:600}
+  .box{background:#f1f3f4;border-radius:6px;padding:10px;margin-top:8px}
+  .url{word-break:break-all;font-family:monospace;font-size:12px}
+  input{width:100%;box-sizing:border-box;font:inherit;padding:6px;border:1px solid #dadce0;border-radius:4px;margin-top:4px}
+  button{font:inherit;border:1px solid #dadce0;background:#fff;border-radius:4px;padding:5px 12px;cursor:pointer;margin-top:8px;margin-right:4px}
+  button.primary{background:#1a73e8;border-color:#1a73e8;color:#fff}
+  .ok{color:#137333;font-weight:600}
+  .err{color:#c5221f}
+  .muted{color:#5f6368;font-size:12px}
+</style>
+</head>
+<body>
+<div>Die Tabs sind angelegt. Jetzt muss das Sheet noch einmalig als <b>Web-App</b> bereitgestellt werden – das kann nur der Besitzer selbst machen:</div>
+<ol>
+  <li><a id="ed" href="#">Apps-Script-Editor öffnen</a> (öffnet sich in einem neuen Tab)</li>
+  <li>Oben rechts <b>Bereitstellen → Neue Bereitstellung</b></li>
+  <li>Beim Zahnrad „Typ auswählen“ <b>Web-App</b> wählen</li>
+  <li>Ausführen als: <b>Ich</b> · Zugriff: <b>Jeder</b> → <b>Bereitstellen</b> (ggf. Zugriff erlauben)</li>
+  <li>Den angezeigten <b>Web-App-Link</b> kopieren und unten einfügen</li>
+</ol>
+<div class="box">
+  <div id="state" class="muted">prüfe …</div>
+  <input id="url" placeholder="https://script.google.com/macros/s/…/exec">
+  <button class="primary" id="save">Link speichern</button>
+  <button id="copy">Kopieren</button>
+</div>
+<p class="muted">Diesen Link tragen alle Fahrer in ihrer <b>lmu-stint-sync.exe</b> unter „Team-Sheet“ ein. Danach erscheinen sie unter <b>LMU Sync → Admin</b> und du gibst sie dort frei. Nach Code-Änderungen: Bereitstellen → Bereitstellungen verwalten → Stift → Version „Neue Version“.</p>
+<script>
+var URL0 = <?!= JSON.stringify(url || '') ?>;
+var ED = <?!= JSON.stringify(scriptUrl) ?>;
+function $(i){return document.getElementById(i);}
+$('ed').href = ED;
+function show(u, msg, cls){ if (u) $('url').value = u; $('state').className = cls || 'muted'; $('state').textContent = msg; }
+if (URL0) show(URL0, 'Bereitgestellt ✓ – Web-App-Link:', 'ok'); else show('', 'Noch kein Web-App-Link gespeichert.', 'muted');
+$('save').onclick = function(){
+  google.script.run.withSuccessHandler(function(u){ show(u, 'Gespeichert ✓ – Web-App-Link:', 'ok'); })
+    .withFailureHandler(function(e){ show('', e.message, 'err'); }).adminSaveUrl($('url').value);
+};
+$('copy').onclick = function(){ $('url').select(); try { document.execCommand('copy'); show('', 'Kopiert ✓', 'ok'); } catch (e) {} };
+</script>
+</body>
+</html>

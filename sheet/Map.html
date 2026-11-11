@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root{--bg:#0e1116;--card:#171b22;--line:#262c36;--text:#e8ecf2;--mute:#8b95a5;
+    --accent:#ff5a1f;--ok:#2fbf71;--warn:#f2b632;--bad:#e5484d;--blue:#3fb8ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px 16px 40px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  h1{font-size:17px;margin:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-bottom:6px}
+  .mute{color:var(--mute)} .small{font-size:12px;color:var(--mute)}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  select,input{font:inherit;background:#0b0e13;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+  button{font:inherit;font-size:13px;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer}
+  button.on{border-color:var(--mute);background:#222936}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:3px 10px;margin:3px 4px 3px 0;cursor:pointer;font-size:13px;user-select:none}
+  .chip i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .chip.off{opacity:.35}
+  .grid{display:grid;grid-template-columns:1fr 320px;gap:12px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  canvas{display:block;width:100%;touch-action:none}
+  #map{height:520px;background:#0b0e13;border-radius:10px;cursor:grab}
+  @media (max-width:640px){#map{height:360px}}
+  .chart{height:150px;background:#0b0e13;border-radius:10px;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-weight:600;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:5px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:5px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td.r,th.r{text-align:right}
+  .scroll{overflow:auto}
+  #laps{max-height:330px}
+  tr.focus td{background:rgba(255,90,31,.14)}
+  tr.ref td{background:rgba(255,255,255,.05)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .tag{font-size:10px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px}
+  .tag.r{background:#e8ecf2;color:#0e1116}.tag.f{background:var(--accent);color:#fff}
+  .sum div{margin:3px 0}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin-top:6px}
+  .legend b{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+  .hlk{font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;background:#262c36}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🗺 Strecken-Analyse</h1>
+    <div class="row">
+      <select id="track"></select>
+      <button id="mirror" title="Karte spiegeln, falls sie seitenverkehrt aussieht">⇋ spiegeln</button>
+    </div>
+  </header>
+  <div class="small" id="state" style="margin:-4px 0 10px">lädt …</div>
+
+  <div class="card">
+    <div class="row">
+      <div><div class="lbl">Runden aus</div>
+        <select id="run"></select></div>
+      <div><div class="lbl">Session</div>
+        <select id="sess"><option value="">alle</option><option>Rennen</option><option>Qualifying</option><option>Training</option></select></div>
+      <div><div class="lbl">Referenz</div>
+        <select id="refMode"><option value="team">beste Team-Runde (alle Rennen)</option><option value="run">beste Runde in der Auswahl</option><option value="pick">selbst gewählt (☆ in der Liste)</option></select></div>
+      <div><div class="lbl">Fahrer zeigen</div>
+        <select id="perDrv"><option value="best">beste Runde je Fahrer</option><option value="last">letzte Runde je Fahrer</option><option value="pick">selbst gewählt (☑ in der Liste)</option></select></div>
+    </div>
+    <div class="lbl" style="margin-top:10px">Fahrer (Klick blendet ein/aus)</div>
+    <div id="drivers"></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card" style="padding:8px">
+        <canvas id="map"></canvas>
+        <div class="legend">
+          <span><b style="background:#59616f"></b>Referenz</span>
+          <span><b style="background:linear-gradient(90deg,#2fbf71,#e5484d)"></b>Fokus-Runde: grün = schneller, rot = Zeit verloren</span>
+          <label><input type="checkbox" id="showLines" checked> Linien der Fahrer</label>
+          <label><input type="checkbox" id="showHl" checked> Highlights</label>
+          <label><input type="checkbox" id="showCorners" checked> Kurven</label>
+          <span>Mausrad = Zoom · Ziehen = Verschieben · Doppelklick = zurück</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="lbl">Zeitabstand zur Referenz über die Runde (s, oben = langsamer)</div>
+        <canvas id="cDelta" class="chart"></canvas>
+        <div class="lbl" style="margin-top:10px">Geschwindigkeit (km/h)</div>
+        <canvas id="cSpeed" class="chart"></canvas>
+        <div class="lbl" style="margin-top:10px">Gas / Bremse – Fokus (voll) vs. Referenz (gestrichelt)</div>
+        <canvas id="cPed" class="chart" style="height:90px"></canvas>
+        <div class="small" id="cursorInfo" style="margin-top:6px">Maus über Karte oder Grafik zeigt die Stelle.</div>
+      </div>
+    </div>
+    <div>
+      <div class="card sum">
+        <div class="lbl">Wo geht Zeit verloren? <span id="focusName" class="mute"></span></div>
+        <div id="summary" class="small">–</div>
+      </div>
+      <div class="card">
+        <div class="lbl">Kurven (Fokus vs. Referenz)</div>
+        <div class="scroll"><table><thead><tr><th>Kurve</th><th class="r">Zeit</th><th class="r">min km/h</th><th class="r">Bremse</th></tr></thead><tbody id="corners"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Runden <span class="mute" style="text-transform:none;letter-spacing:0">– Klick auf eine Zeile = Fokus-Runde · ☆ = als Referenz · ☑ = vergleichen</span></div>
+    <div class="row" style="margin-bottom:6px"><label class="small"><input type="checkbox" id="onlyClean" checked> nur saubere Runden (ohne Box)</label></div>
+    <div class="scroll" id="laps"><table><thead><tr><th></th><th>Fahrer</th><th>Session</th><th class="r">Rd</th><th class="r">Zeit</th><th class="r">Δ Ref</th><th>☆</th><th>☑</th></tr></thead><tbody id="lapBody"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Highlights für Videos</div>
+    <div class="row" style="margin-bottom:8px">
+      <select id="hlDrv"><option value="">alle Fahrer</option></select>
+      <select id="hlKind"><option value="">alle Arten</option></select>
+      <label class="small"><input type="checkbox" id="hlTrack" checked> nur diese Strecke / Auswahl</label>
+      <span class="small">Aufnahme gestartet um</span><input id="recStart" type="time" step="1" style="width:120px">
+      <button id="chapters">Als YouTube-Kapitel kopieren</button>
+    </div>
+    <div class="scroll" style="max-height:340px"><table><thead><tr><th>Uhrzeit</th><th>Video</th><th>Fahrer</th><th class="r">Rd</th><th>Art</th><th>Beschreibung</th></tr></thead><tbody id="hlBody"></tbody></table></div>
+    <div class="small" style="margin-top:6px">Überholen und Zweikämpfe werden im Rennen erkannt (exe ab 2.6), Zweikampf = länger als 1,5 min innerhalb 1 s. Zeitpunkt = Beginn der Szene. Mit „Aufnahme gestartet um“ wird die Stelle im Video berechnet.</div>
+    <textarea id="clip" style="position:absolute;left:-9999px;top:0"></textarea>
+  </div>
+  <div class="small" id="foot" style="text-align:center"></div>
+</div>
+
+<script>
+var API = <?!= JSON.stringify(apiUrl) ?>;
+var COLORS = ['#ff8a3d', '#3fb8ff', '#c58bff', '#2fbf71', '#f2b632', '#ff5c8a', '#5ee0d0', '#a3b1ff', '#d6e26b', '#ff9f9f'];
+var M = 800;
+var L = null, DATA = {}, TRACKS = [], CUR = null, DRV = {}, HIDE = {}, PICKREF = null, PICKCMP = {}, FOCUS = null;
+var VIEW = null, MIRROR = true, CURSOR = null;
+function $(i) { return document.getElementById(i); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function lapT(s) { if (!(s > 0)) return '–'; var m = Math.floor(s / 60); return m + ':' + ('0' + (s - m * 60).toFixed(3)).slice(-6); }
+function sgn(v, d) { return (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(d == null ? 2 : d).replace('.', ','); }
+function dayStr(ms) { return new Date(ms).toLocaleDateString('de-AT', { timeZone: 'Europe/Vienna', weekday: 'short', day: '2-digit', month: '2-digit' }); }
+function clock(ms) { return new Date(ms).toLocaleTimeString('de-AT', { timeZone: 'Europe/Vienna' }); }
+
+var seq = 0;
+function api(q, cb) {
+  var name = 'mcb' + (++seq), s = document.createElement('script');
+  window[name] = function (d) { delete window[name]; s.remove(); cb(d); };
+  s.onerror = function () { $('state').textContent = 'Verbindungsfehler – bitte neu laden'; };
+  s.src = API + '?' + q + '&callback=' + name + '&t=' + Date.now();
+  document.body.appendChild(s);
+}
+
+/* ---------- Spur dekodieren (gzip + base64, Delta-Werte) ---------- */
+function decode(b64) {
+  var bin = atob(b64), u8 = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  var ds = new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Response(ds).text().then(function (txt) {
+    var j = JSON.parse(txt), n = j.n, o = { d: [], t: [], x: [], z: [], s: j.s, g: [], b: [] }, a = [0, 0, 0, 0];
+    for (var k = 0; k < n; k++) {
+      a[0] += j.d[k]; a[1] += j.t[k]; a[2] += j.x[k]; a[3] += j.z[k];
+      o.d.push(a[0]); o.t.push(a[1] / 100); o.x.push(a[2] / 10); o.z.push(a[3] / 10);
+      o.g.push(j.g[k] * 5); o.b.push(j.b[k] * 5);
+    }
+    return o;
+  });
+}
+/* auf ein festes Raster 0..1 der Rundenlänge umrechnen */
+function resample(o, lapTime) {
+  var n = o.d.length, len = o.d[n - 1], r = { len: len, t: [], x: [], z: [], s: [], g: [], b: [] }, j = 0;
+  for (var k = 0; k <= M; k++) {
+    var dd = k / M * len;
+    while (j < n - 2 && o.d[j + 1] < dd) j++;
+    var d0 = o.d[j], d1 = o.d[j + 1], f = d1 > d0 ? Math.max(0, Math.min(1, (dd - d0) / (d1 - d0))) : 0;
+    ['t', 'x', 'z', 's', 'g', 'b'].forEach(function (key) { r[key].push(o[key][j] + (o[key][j + 1] - o[key][j]) * f); });
+  }
+  if (lapTime > 0) { var sc = lapTime / r.t[M]; if (sc > 0.9 && sc < 1.1) r.t = r.t.map(function (v) { return v * sc; }); }
+  return r;
+}
+function need(rows, done) {
+  var miss = rows.filter(function (r) { return r && !DATA[r]; });
+  if (!miss.length) { done(); return; }
+  $('state').textContent = 'lade ' + miss.length + ' Runde(n) …';
+  api('api=maptrace&rows=' + miss.join(','), function (res) {
+    var lap = {}; L.laps.forEach(function (x) { lap[x.row] = x; });
+    Promise.all(miss.map(function (r) {
+      return res[r] ? decode(res[r]).then(function (o) { DATA[r] = resample(o, lap[r] ? lap[r].time : 0); }).catch(function () { DATA[r] = null; }) : Promise.resolve();
+    })).then(function () { $('state').textContent = ''; done(); });
+  });
+}
+
+/* ---------- Strecken (Name + Länge, Layouts getrennt) ---------- */
+function buildTracks() {
+  var by = {};
+  L.laps.forEach(function (x) { (by[x.track] = by[x.track] || []).push(x); });
+  TRACKS = [];
+  Object.keys(by).forEach(function (name) {
+    var laps = by[name].slice().sort(function (a, b) { return a.len - b.len; }), cl = null;
+    laps.forEach(function (x) {
+      if (!cl || x.len > cl.avg * 1.03) { cl = { name: name, laps: [], avg: x.len, last: 0 }; TRACKS.push(cl); }
+      cl.laps.push(x); cl.avg = cl.laps.reduce(function (s, y) { return s + y.len; }, 0) / cl.laps.length; cl.last = Math.max(cl.last, x.ts);
+    });
+  });
+  TRACKS.sort(function (a, b) { return b.last - a.last; });
+  var multi = {}; TRACKS.forEach(function (t) { multi[t.name] = (multi[t.name] || 0) + 1; });
+  $('track').innerHTML = TRACKS.map(function (t, i) {
+    return '<option value="' + i + '">' + esc(t.name) + (multi[t.name] > 1 ? ' · ' + (t.avg / 1000).toFixed(2).replace('.', ',') + ' km' : '') + ' (' + t.laps.length + ' Rd)</option>';
+  }).join('');
+  var li = TRACKS.findIndex(function (t) { return t.name === L.liveTrack; });
+  $('track').value = String(li >= 0 ? li : 0);
+}
+function runKey(x) { return x.session + ' · ' + dayStr(x.ts); }
+function selectTrack() {
+  CUR = TRACKS[+$('track').value];
+  VIEW = null; PICKREF = null; PICKCMP = {}; FOCUS = null;
+  var runs = {}, order = [];
+  CUR.laps.forEach(function (x) { var k = runKey(x); if (!runs[k]) { runs[k] = x.ts; order.push(k); } runs[k] = Math.max(runs[k], x.ts); });
+  order.sort(function (a, b) { return runs[b] - runs[a]; });
+  $('run').innerHTML = '<option value="">alle (auch frühere Rennen)</option>' + order.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
+  $('run').value = order[0] || '';
+  DRV = {};
+  var names = []; CUR.laps.forEach(function (x) { if (names.indexOf(x.driver) === -1) names.push(x.driver); });
+  names.sort().forEach(function (n, i) { DRV[n] = COLORS[i % COLORS.length]; });
+  update();
+}
+function filtered() {
+  var run = $('run').value, ss = $('sess').value, clean = $('onlyClean').checked;
+  return CUR.laps.filter(function (x) { return (!run || runKey(x) === run) && (!ss || x.session === ss) && (!clean || x.clean); });
+}
+function bestOf(list) { return list.filter(function (x) { return x.time > 0; }).sort(function (a, b) { return a.time - b.time; })[0] || null; }
+
+/* Referenz, verglichene Runden und Fokus bestimmen */
+function selection() {
+  var F = filtered(), ref = null;
+  var mode = $('refMode').value;
+  if (mode === 'pick' && PICKREF) ref = CUR.laps.filter(function (x) { return x.row === PICKREF; })[0];
+  if (!ref && mode !== 'run') ref = bestOf(CUR.laps.filter(function (x) { return x.clean; }));
+  if (!ref) ref = bestOf(F);
+  var cmp = [], per = $('perDrv').value;
+  Object.keys(DRV).forEach(function (d) {
+    if (HIDE[d]) return;
+    var mine = F.filter(function (x) { return x.driver === d; });
+    if (per === 'pick') mine.filter(function (x) { return PICKCMP[x.row]; }).forEach(function (x) { cmp.push(x); });
+    else if (per === 'last') { var l = mine.slice().sort(function (a, b) { return b.ts - a.ts; })[0]; if (l) cmp.push(l); }
+    else { var b = bestOf(mine); if (b) cmp.push(b); }
+  });
+  cmp = cmp.slice(0, 12);
+  var foc = FOCUS && CUR.laps.filter(function (x) { return x.row === FOCUS; })[0];
+  if (!foc) foc = cmp.filter(function (x) { return x.driver === L.liveDriver; })[0] || cmp.filter(function (x) { return ref && x.row !== ref.row; })[0] || cmp[0] || null;
+  return { F: F, ref: ref, cmp: cmp, focus: foc };
+}
+var SEL = null;
+function update() {
+  renderDrivers();
+  SEL = selection();
+  var rows = [SEL.ref && SEL.ref.row, SEL.focus && SEL.focus.row].concat(SEL.cmp.map(function (x) { return x.row; }));
+  need(rows, function () { renderAll(); });
+}
+function renderDrivers() {
+  $('drivers').innerHTML = Object.keys(DRV).map(function (d) {
+    return '<span class="chip' + (HIDE[d] ? ' off' : '') + '" data-d="' + esc(d) + '"><i style="background:' + DRV[d] + '"></i>' + esc(d) + '</span>';
+  }).join('') || '<span class="small">keine Runden</span>';
+}
+
+/* ---------- Analyse ---------- */
+function deltaOf(r, ref) { var o = []; for (var k = 0; k <= M; k++) o.push(r.t[k] - ref.t[k]); return o; }
+function smooth(a, w) { var o = []; for (var k = 0; k < a.length; k++) { var s = 0, n = 0; for (var j = k - w; j <= k + w; j++) { var i = (j + a.length) % a.length; s += a[i]; n++; } o.push(s / n); } return o; }
+function corners(ref) {
+  var v = smooth(ref.s, 3), W = Math.max(4, Math.round(120 / ref.len * M)), B = Math.max(8, Math.round(350 / ref.len * M)), out = [];
+  for (var k = 0; k < M; k++) {
+    var isMin = true;
+    for (var j = k - W; j <= k + W; j++) { var i = (j + M) % M; if (i !== k && (v[i] < v[k] - 0.01 || (Math.abs(v[i] - v[k]) <= 0.01 && j < k))) { isMin = false; break; } }
+    if (!isMin) continue;
+    var before = 0; for (j = k - B; j < k; j++) before = Math.max(before, v[(j + M) % M]);
+    if (before - v[k] >= 18) out.push(k);
+  }
+  /* zu nah beieinander → nur die langsamere behalten */
+  var merged = [];
+  out.forEach(function (k) {
+    var last = merged[merged.length - 1];
+    if (last != null && k - last < W * 1.5) { if (v[k] < v[last]) merged[merged.length - 1] = k; } else merged.push(k);
+  });
+  if (merged.length > 1 && merged[0] + M - merged[merged.length - 1] < W * 1.5) merged.shift();
+  return merged;
+}
+function brakePoint(r, from, apex) {
+  for (var k = from; k !== apex; k = (k + 1) % M) if (r.b[k] >= 30) return k;
+  return -1;
+}
+function analyse(ref, foc) {
+  var cs = corners(ref), res = [];
+  if (!foc || cs.length < 1) return { list: [], cs: cs };
+  var dl = deltaOf(foc, ref), n = cs.length;
+  var dist = function (a, b) { return ((b - a + M) % M) / M * ref.len; };
+  for (var c = 0; c < n; c++) {
+    var apex = cs[c], prev = cs[(c - 1 + n) % n], next = cs[(c + 1) % n];
+    var s = n === 1 ? (apex + Math.round(M / 2)) % M : (prev + Math.round(((apex - prev + M) % M) / 2)) % M;
+    var e = n === 1 ? (apex + Math.round(M / 2)) % M : (apex + Math.round(((next - apex + M) % M) / 2)) % M;
+    var loss = e >= s ? dl[e] - dl[s] : (dl[M] - dl[s]) + (dl[e] - dl[0]);
+    var minR = 1e9, minF = 1e9;
+    for (var k = s; k !== e; k = (k + 1) % M) { minR = Math.min(minR, ref.s[k]); minF = Math.min(minF, foc.s[k]); }
+    var bR = brakePoint(ref, s, apex), bF = brakePoint(foc, s, apex);
+    var bDiff = bR >= 0 && bF >= 0 ? Math.round(dist(bF, apex) - dist(bR, apex)) : null;
+    res.push({ n: c + 1, apex: apex, s: s, e: e, loss: loss, minR: minR, minF: minF, bDiff: bDiff });
+  }
+  return { list: res, cs: cs, dl: dl };
+}
+
+/* ---------- Karte ---------- */
+function fitView(ref, cv) {
+  var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+  for (var k = 0; k <= M; k++) { var p = proj(ref.x[k], ref.z[k]); minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); }
+  var w = cv.clientWidth, h = cv.clientHeight, sc = Math.min((w - 40) / (maxX - minX || 1), (h - 40) / (maxY - minY || 1));
+  VIEW = { s: sc, ox: (w - (maxX - minX) * sc) / 2 - minX * sc, oy: (h - (maxY - minY) * sc) / 2 - minY * sc };
+}
+function proj(x, z) { return [x, MIRROR ? -z : z]; }
+function scr(x, z) { var p = proj(x, z); return [p[0] * VIEW.s + VIEW.ox, p[1] * VIEW.s + VIEW.oy]; }
+function setupCanvas(cv) {
+  var dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  var c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h); return c;
+}
+function drawMap(A) {
+  var cv = $('map'), c = setupCanvas(cv), ref = SEL.ref && DATA[SEL.ref.row];
+  if (!ref) { c.fillStyle = '#8b95a5'; c.fillText('Noch keine Runden mit Spur auf dieser Strecke (exe ab 2.6).', 20, 30); return; }
+  if (!VIEW) fitView(ref, cv);
+  var path = function (r, k0, k1) { c.beginPath(); for (var k = k0; k <= k1; k++) { var p = scr(r.x[k], r.z[k]); if (k === k0) c.moveTo(p[0], p[1]); else c.lineTo(p[0], p[1]); } };
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.strokeStyle = '#2a313d'; c.lineWidth = 14; path(ref, 0, M); c.stroke();
+  c.strokeStyle = '#59616f'; c.lineWidth = 3; path(ref, 0, M); c.stroke();
+  if ($('showLines').checked) SEL.cmp.forEach(function (x) {
+    var r = DATA[x.row]; if (!r || x.row === SEL.ref.row) return;
+    c.strokeStyle = DRV[x.driver]; c.globalAlpha = 0.85; c.lineWidth = 1.6; path(r, 0, M); c.stroke(); c.globalAlpha = 1;
+  });
+  var foc = SEL.focus && DATA[SEL.focus.row];
+  if (foc && A.dl && SEL.focus.row !== SEL.ref.row) {
+    var rate = smooth(A.dl.map(function (v, k) { return k ? v - A.dl[k - 1] : 0; }), 4), mx = 0;
+    rate.forEach(function (v) { mx = Math.max(mx, Math.abs(v)); });
+    for (var k = 1; k <= M; k++) {
+      var q = mx ? rate[k] / mx : 0, a = Math.min(1, Math.abs(q) * 1.6);
+      c.strokeStyle = q > 0 ? 'rgba(229,72,77,' + (0.25 + 0.75 * a) + ')' : 'rgba(47,191,113,' + (0.25 + 0.75 * a) + ')';
+      c.lineWidth = 6; var p0 = scr(foc.x[k - 1], foc.z[k - 1]), p1 = scr(foc.x[k], foc.z[k]);
+      c.beginPath(); c.moveTo(p0[0], p0[1]); c.lineTo(p1[0], p1[1]); c.stroke();
+    }
+  }
+  var st = scr(ref.x[0], ref.z[0]); c.fillStyle = '#fff'; c.fillRect(st[0] - 4, st[1] - 4, 8, 8);
+  c.font = '11px sans-serif'; c.fillText('Start/Ziel', st[0] + 8, st[1] - 6);
+  if ($('showCorners').checked) (A.list.length ? A.list : A.cs.map(function (k, i) { return { n: i + 1, apex: k }; })).forEach(function (x) {
+    var p = scr(ref.x[x.apex], ref.z[x.apex]);
+    c.fillStyle = 'rgba(14,17,22,.85)'; c.beginPath(); c.arc(p[0], p[1], 10, 0, 7); c.fill();
+    c.fillStyle = x.loss > 0.05 ? '#ff8a8a' : '#e8ecf2'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('K' + x.n, p[0], p[1]);
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  });
+  if ($('showHl').checked) hlForTrack().forEach(function (h) {
+    if (h.x == null || h.z == null) return;
+    var p = scr(h.x, h.z), ic = { 'Überholt': '⬆', 'Überholt worden': '⬇', 'Zweikampf': '⚔', 'Dreher': '↻', 'Schaden': '✱', 'Bestzeit': '★', 'Strafe': '!' }[h.kind] || '•';
+    c.fillStyle = 'rgba(14,17,22,.9)'; c.beginPath(); c.arc(p[0], p[1], 9, 0, 7); c.fill();
+    c.fillStyle = DRV[h.driver] || '#f2b632'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ic, p[0], p[1] + 1);
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  });
+  if (CURSOR != null) {
+    var pc = scr(ref.x[CURSOR], ref.z[CURSOR]);
+    c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(pc[0], pc[1], 7, 0, 7); c.stroke();
+  }
+}
+
+/* ---------- Grafiken ---------- */
+function chart(id, series, opt) {
+  var cv = $(id), c = setupCanvas(cv), w = cv.clientWidth, h = cv.clientHeight, lo = opt.lo, hi = opt.hi;
+  if (lo == null || hi == null) {
+    lo = 1e9; hi = -1e9;
+    series.forEach(function (s) { s.y.forEach(function (v) { lo = Math.min(lo, v); hi = Math.max(hi, v); }); });
+    if (opt.sym) { var m = Math.max(Math.abs(lo), Math.abs(hi), 0.2); lo = -m; hi = m; }
+    var pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+  }
+  var Y = function (v) { return h - 14 - (v - lo) / (hi - lo) * (h - 22); }, X = function (k) { return 34 + k / M * (w - 40); };
+  c.font = '10px sans-serif'; c.fillStyle = '#8b95a5'; c.strokeStyle = '#262c36'; c.lineWidth = 1;
+  [lo + (hi - lo) * 0.1, (lo + hi) / 2, hi - (hi - lo) * 0.1].forEach(function (v) {
+    c.beginPath(); c.moveTo(34, Y(v)); c.lineTo(w - 6, Y(v)); c.stroke();
+    c.fillText(opt.fmt ? opt.fmt(v) : Math.round(v), 2, Y(v) + 3);
+  });
+  if (opt.sym) { c.strokeStyle = '#59616f'; c.beginPath(); c.moveTo(34, Y(0)); c.lineTo(w - 6, Y(0)); c.stroke(); }
+  (SEL.ana && $('showCorners').checked ? SEL.ana.cs : []).forEach(function (k, i) { c.fillStyle = '#59616f'; c.fillText('K' + (i + 1), X(k) - 6, h - 2); });
+  series.forEach(function (s) {
+    c.strokeStyle = s.c; c.lineWidth = s.w || 1.5; c.setLineDash(s.dash ? [4, 3] : []);
+    c.beginPath(); s.y.forEach(function (v, k) { if (k) c.lineTo(X(k), Y(v)); else c.moveTo(X(k), Y(v)); }); c.stroke();
+  });
+  c.setLineDash([]);
+  if (CURSOR != null) { c.strokeStyle = '#fff'; c.globalAlpha = 0.5; c.beginPath(); c.moveTo(X(CURSOR), 4); c.lineTo(X(CURSOR), h - 12); c.stroke(); c.globalAlpha = 1; }
+  cv._X = { x0: 34, w: w - 40 };
+}
+function drawCharts() {
+  var ref = SEL.ref && DATA[SEL.ref.row];
+  if (!ref) { ['cDelta', 'cSpeed', 'cPed'].forEach(function (id) { setupCanvas($(id)); }); return; }
+  var ds = [], ss = [{ y: ref.s, c: '#59616f', w: 2 }];
+  SEL.cmp.forEach(function (x) {
+    var r = DATA[x.row]; if (!r || x.row === SEL.ref.row) return;
+    var isF = SEL.focus && x.row === SEL.focus.row;
+    ds.push({ y: deltaOf(r, ref), c: DRV[x.driver], w: isF ? 2.6 : 1.3 });
+    ss.push({ y: r.s, c: DRV[x.driver], w: isF ? 2 : 1.2 });
+  });
+  var foc = SEL.focus && DATA[SEL.focus.row];
+  if (foc && !SEL.cmp.some(function (x) { return x.row === SEL.focus.row; }) && SEL.focus.row !== SEL.ref.row) {
+    ds.push({ y: deltaOf(foc, ref), c: '#ff5a1f', w: 2.6 }); ss.push({ y: foc.s, c: '#ff5a1f', w: 2 });
+  }
+  if (!ds.length) ds.push({ y: ref.t.map(function () { return 0; }), c: '#59616f' });
+  chart('cDelta', ds, { sym: true, fmt: function (v) { return v.toFixed(1).replace('.', ','); } });
+  chart('cSpeed', ss, {});
+  var ped = [{ y: ref.g, c: 'rgba(47,191,113,.6)', dash: true }, { y: ref.b, c: 'rgba(229,72,77,.6)', dash: true }];
+  if (foc) { ped.push({ y: foc.g, c: '#2fbf71', w: 1.6 }); ped.push({ y: foc.b, c: '#e5484d', w: 1.6 }); }
+  chart('cPed', ped, { lo: -5, hi: 105, fmt: function (v) { return Math.round(v) + '%'; } });
+}
+
+/* ---------- Tabellen ---------- */
+function renderSummary(A) {
+  var f = SEL.focus, r = SEL.ref;
+  $('focusName').textContent = f ? '– ' + f.driver + ' Rd ' + f.lap + ' (' + lapT(f.time) + ') vs. ' + (r ? r.driver + ' ' + lapT(r.time) : '') : '';
+  if (!f || !r || f.row === r.row) { $('summary').innerHTML = 'Fokus-Runde = Referenz. Andere Runde in der Liste anklicken.'; $('corners').innerHTML = ''; return; }
+  var tot = f.time - r.time, list = A.list.slice().sort(function (a, b) { return b.loss - a.loss; });
+  var h = '<div>Gesamt: <b class="' + (tot > 0 ? 'bad' : 'ok') + '">' + sgn(tot) + ' s</b></div>';
+  list.filter(function (x) { return x.loss > 0.04; }).slice(0, 4).forEach(function (x) {
+    var why = [];
+    if (x.bDiff != null && x.bDiff >= 8) why.push(x.bDiff + ' m früher gebremst');
+    if (x.bDiff != null && x.bDiff <= -8) why.push(-x.bDiff + ' m später gebremst (zu spät?)');
+    if (x.minF < x.minR - 2) why.push('Kurvenspeed −' + Math.round(x.minR - x.minF) + ' km/h');
+    if (x.minF > x.minR + 2) why.push('Kurvenspeed +' + Math.round(x.minF - x.minR) + ' km/h, aber schlechter raus');
+    if (!why.length) why.push('am Kurvenausgang / beim Beschleunigen');
+    h += '<div><b class="bad">K' + x.n + ' ' + sgn(x.loss) + ' s</b> – ' + why.join(', ') + '</div>';
+  });
+  var gain = list.filter(function (x) { return x.loss < -0.04; }).sort(function (a, b) { return a.loss - b.loss; }).slice(0, 2);
+  if (gain.length) h += '<div class="ok">schneller: ' + gain.map(function (x) { return 'K' + x.n + ' ' + sgn(x.loss) + ' s'; }).join(' · ') + '</div>';
+  $('summary').innerHTML = h;
+  $('corners').innerHTML = A.list.map(function (x) {
+    return '<tr data-k="' + x.apex + '"><td>K' + x.n + '</td><td class="r ' + (x.loss > 0.04 ? 'bad' : x.loss < -0.04 ? 'ok' : '') + '">' + sgn(x.loss) + '</td>' +
+      '<td class="r">' + Math.round(x.minF) + ' <span class="mute">/ ' + Math.round(x.minR) + '</span></td>' +
+      '<td class="r">' + (x.bDiff == null ? '–' : x.bDiff > 0 ? x.bDiff + ' m früher' : x.bDiff < 0 ? -x.bDiff + ' m später' : 'gleich') + '</td></tr>';
+  }).join('');
+}
+function renderLaps() {
+  var F = SEL.F.slice().sort(function (a, b) { return a.time - b.time; }), ref = SEL.ref, cmpRows = {};
+  SEL.cmp.forEach(function (x) { cmpRows[x.row] = 1; });
+  $('lapBody').innerHTML = F.map(function (x) {
+    var isR = ref && x.row === ref.row, isF = SEL.focus && x.row === SEL.focus.row;
+    return '<tr data-row="' + x.row + '" class="' + (isF ? 'focus' : isR ? 'ref' : '') + '" style="cursor:pointer"><td><span class="dot" style="background:' + DRV[x.driver] + '"></span></td>' +
+      '<td>' + esc(x.driver) + (isR ? '<span class="tag r">REF</span>' : '') + (isF ? '<span class="tag f">FOKUS</span>' : '') + '</td>' +
+      '<td class="mute">' + esc(runKey(x)) + (x.clean ? '' : ' · Box') + '</td><td class="r">' + x.lap + '</td><td class="r">' + lapT(x.time) + '</td>' +
+      '<td class="r ' + (ref && x.time - ref.time > 0 ? 'bad' : 'ok') + '">' + (ref ? sgn(x.time - ref.time, 3) : '') + '</td>' +
+      '<td><button data-ref="' + x.row + '">' + (isR ? '★' : '☆') + '</button></td><td><input type="checkbox" data-cmp="' + x.row + '"' + (cmpRows[x.row] ? ' checked' : '') + '></td></tr>';
+  }).join('') || '<tr><td colspan="8" class="mute">Keine Runden in dieser Auswahl.</td></tr>';
+}
+function hlForTrack() {
+  var stints = {};
+  (($('hlTrack').checked && SEL) ? SEL.F : (CUR ? CUR.laps : [])).forEach(function (x) { stints[x.stint] = 1; });
+  return (L.highlights || []).filter(function (h) { return !$('hlTrack').checked || stints[h.stint]; });
+}
+function renderHl() {
+  var list = hlForTrack().filter(function (h) { return (!$('hlDrv').value || h.driver === $('hlDrv').value) && (!$('hlKind').value || h.kind === $('hlKind').value); })
+    .sort(function (a, b) { return a.ts - b.ts; });
+  var rs = recStartMs(list[0]);
+  $('hlBody').innerHTML = list.map(function (h) {
+    var off = rs != null ? (h.ts - rs) / 1000 : null;
+    return '<tr><td>' + dayStr(h.ts) + ' ' + clock(h.ts) + '</td><td>' + (off != null && off >= 0 ? hmsS(off) : '–') + '</td><td><span class="dot" style="background:' + (DRV[h.driver] || '#8b95a5') + '"></span>' + esc(h.driver) + '</td>' +
+      '<td class="r">' + esc(h.lap) + '</td><td><span class="hlk">' + esc(h.kind) + '</span></td><td style="white-space:normal">' + esc(h.text) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" class="mute">Keine Highlights in dieser Auswahl.</td></tr>';
+  return list;
+}
+function hmsS(s) { s = Math.round(s); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + ('0' + m).slice(-2) : m) + ':' + ('0' + x).slice(-2); }
+function recStartMs(first) {
+  var v = $('recStart').value; if (!v || !first) return null;
+  var p = v.split(':').map(Number), d = new Date(first.ts);
+  var parts = {}; new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Vienna', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' })
+    .formatToParts(d).forEach(function (q) { parts[q.type] = q.value; });
+  var hlLocalSec = (+parts.hour) * 3600 + (+parts.minute) * 60 + (+parts.second), recSec = p[0] * 3600 + p[1] * 60 + (p[2] || 0);
+  return first.ts - (hlLocalSec - recSec) * 1000;
+}
+
+function renderAll() {
+  var ref = SEL.ref && DATA[SEL.ref.row], foc = SEL.focus && DATA[SEL.focus.row];
+  SEL.ana = ref ? analyse(ref, foc && SEL.focus.row !== SEL.ref.row ? foc : null) : { list: [], cs: [] };
+  if (ref && !SEL.ana.cs.length) SEL.ana.cs = corners(ref);
+  drawMap(SEL.ana); drawCharts(); renderSummary(SEL.ana); renderLaps(); renderHl();
+  $('state').textContent = CUR ? CUR.name + ' · ' + (CUR.avg / 1000).toFixed(2).replace('.', ',') + ' km (aus der gefahrenen Linie) · Referenz: ' + (SEL.ref ? SEL.ref.driver + ' ' + lapT(SEL.ref.time) + ' (' + runKey(SEL.ref) + ')' : '–') : '';
+}
+function redrawLight() { drawMap(SEL.ana); drawCharts(); cursorInfo(); }
+function cursorInfo() {
+  var ref = SEL.ref && DATA[SEL.ref.row];
+  if (CURSOR == null || !ref) return;
+  var t = Math.round(CURSOR / M * ref.len) + ' m: Referenz ' + Math.round(ref.s[CURSOR]) + ' km/h';
+  SEL.cmp.concat(SEL.focus ? [SEL.focus] : []).filter(function (x, i, a) { return a.indexOf(x) === i; }).forEach(function (x) {
+    var r = DATA[x.row]; if (!r || x.row === SEL.ref.row) return;
+    t += ' · ' + x.driver + ' ' + Math.round(r.s[CURSOR]) + ' km/h (' + sgn(r.t[CURSOR] - ref.t[CURSOR]) + ' s)';
+  });
+  $('cursorInfo').textContent = t;
+}
+
+/* ---------- Bedienung ---------- */
+$('track').onchange = selectTrack;
+['run', 'sess', 'refMode', 'perDrv', 'onlyClean'].forEach(function (i) { $(i).onchange = function () { update(); }; });
+['showLines', 'showHl', 'showCorners'].forEach(function (i) { $(i).onchange = redrawLight; });
+['hlDrv', 'hlKind', 'hlTrack', 'recStart'].forEach(function (i) { $(i).onchange = function () { renderHl(); drawMap(SEL.ana); }; });
+$('mirror').onclick = function () { MIRROR = !MIRROR; VIEW = null; this.className = MIRROR ? '' : 'on'; drawMap(SEL.ana); };
+$('drivers').onclick = function (e) { var c = e.target.closest('.chip'); if (!c) return; var d = c.getAttribute('data-d'); HIDE[d] = !HIDE[d]; update(); };
+$('lapBody').onclick = function (e) {
+  var b = e.target.closest('button'), cb = e.target.closest('input'), tr = e.target.closest('tr');
+  if (b) { PICKREF = +b.getAttribute('data-ref'); $('refMode').value = 'pick'; update(); return; }
+  if (cb) { PICKCMP[+cb.getAttribute('data-cmp')] = cb.checked; if ($('perDrv').value !== 'pick') { SEL.cmp.forEach(function (x) { PICKCMP[x.row] = true; }); PICKCMP[+cb.getAttribute('data-cmp')] = cb.checked; $('perDrv').value = 'pick'; } update(); return; }
+  if (tr && tr.hasAttribute('data-row')) { FOCUS = +tr.getAttribute('data-row'); update(); }
+};
+$('corners').onclick = function (e) { var tr = e.target.closest('tr'); if (tr) { CURSOR = +tr.getAttribute('data-k'); redrawLight(); } };
+$('chapters').onclick = function () {
+  var list = renderHl(), rs = recStartMs(list[0]);
+  if (rs == null) { alert('Bitte zuerst „Aufnahme gestartet um“ eintragen (Uhrzeit, Wiener Zeit).'); return; }
+  var lines = ['0:00 Start'];
+  list.forEach(function (h) { var off = (h.ts - rs) / 1000; if (off > 0) lines.push(hmsS(off) + ' ' + h.kind + ' – ' + h.text); });
+  var t = $('clip'); t.value = lines.join('\n'); t.select();
+  try { document.execCommand('copy'); $('chapters').textContent = 'kopiert ✓'; setTimeout(function () { $('chapters').textContent = 'Als YouTube-Kapitel kopieren'; }, 2000); }
+  catch (err) { alert(t.value); }
+};
+/* Karte: Zoom, Verschieben, Maus-Position */
+(function () {
+  var cv = $('map'), drag = null;
+  cv.addEventListener('wheel', function (e) {
+    if (!VIEW) return; e.preventDefault();
+    var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, f = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+    VIEW.ox = mx - (mx - VIEW.ox) * f; VIEW.oy = my - (my - VIEW.oy) * f; VIEW.s *= f; drawMap(SEL.ana);
+  }, { passive: false });
+  cv.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; });
+  cv.addEventListener('pointerup', function () { drag = null; cv.style.cursor = 'grab'; });
+  cv.addEventListener('pointermove', function (e) {
+    if (!VIEW || !SEL || !SEL.ref || !DATA[SEL.ref.row]) return;
+    if (drag) { VIEW.ox += e.clientX - drag.x; VIEW.oy += e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY }; drawMap(SEL.ana); return; }
+    var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, ref = DATA[SEL.ref.row], best = -1, bd = 400;
+    for (var k = 0; k <= M; k += 2) { var p = scr(ref.x[k], ref.z[k]), d = (p[0] - mx) * (p[0] - mx) + (p[1] - my) * (p[1] - my); if (d < bd) { bd = d; best = k; } }
+    if (best >= 0 && best !== CURSOR) { CURSOR = best; redrawLight(); }
+  });
+  cv.addEventListener('dblclick', function () { VIEW = null; drawMap(SEL.ana); });
+  ['cDelta', 'cSpeed', 'cPed'].forEach(function (id) {
+    $(id).addEventListener('pointermove', function (e) {
+      var c = $(id), r = c.getBoundingClientRect(), X = c._X; if (!X) return;
+      var k = Math.round((e.clientX - r.left - X.x0) / X.w * M); if (k < 0 || k > M) return;
+      CURSOR = k; redrawLight();
+    });
+  });
+  window.addEventListener('resize', function () { VIEW = null; if (SEL) redrawLight(); });
+})();
+
+function start() {
+  if (!window.DecompressionStream) { $('state').textContent = 'Dieser Browser ist zu alt für die Analyse (bitte aktuelles Chrome, Edge, Safari oder Firefox).'; return; }
+  api('api=maplist', function (d) {
+    L = d;
+    if (!L.laps.length) { $('state').textContent = 'Noch keine Runden mit Spur. Die exe ab Version 2.6 schickt sie automatisch mit (auch „Testdaten senden“).'; renderHlOnly(); return; }
+    buildTracks();
+    var kinds = {}, drv = {};
+    L.highlights.forEach(function (h) { kinds[h.kind] = 1; drv[h.driver] = 1; });
+    $('hlKind').innerHTML = '<option value="">alle Arten</option>' + Object.keys(kinds).sort().map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
+    $('hlDrv').innerHTML = '<option value="">alle Fahrer</option>' + Object.keys(drv).sort().map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('');
+    selectTrack();
+    $('foot').textContent = L.laps.length + ' Runden mit Spur im Sheet · Stand ' + clock(L.now);
+  });
+}
+function renderHlOnly() { CUR = null; SEL = { F: [], cmp: [] }; $('hlTrack').checked = false; renderHl(); }
+start();
+</script>
+</body>
+</html>
