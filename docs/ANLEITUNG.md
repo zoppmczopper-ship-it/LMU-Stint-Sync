@@ -200,6 +200,6 @@ gleichzeitig, überschreibt sich nichts mehr.
 - Box-Menü schickt nur noch, wer selbst im Auto sitzt; Zuschauer schicken nur ihr Garagen-Setup.
 
 
-## UPDATES ÜBER GITHUB (exe 2.6.5 + Sheet 3.5)
+## UPDATES ÜBER GITHUB (exe 2.6.5 + Sheet 3.6)
 - **exe:** Beim Start (und alle 6 h) schaut die exe auf GitHub nach einer neueren Version. Gibt es eine, erscheint oben im Einstellungsfenster „Neue Version … verfügbar“ mit Link zum Download. Alte exe schließen, neue starten – die Einstellungen (lmu-stint-sync.json) bleiben.
-- **Sheet:** Admin → Updates holt neue Versionen jetzt von GitHub (Ordner `dist/sheet` im Repository). Ist GitHub nicht erreichbar, kommt das Update wie bisher von der Vorlage.
+- **Sheet:** Admin → Updates holt neue Versionen ausschließlich von GitHub (Ordner `dist/sheet` im Repository). Sheets bis 3.4 holen sich einmalig über die alte Vorlage die Version 3.6, danach nur noch GitHub.

@@ -18,7 +18,7 @@ neue Version dann im Einstellungsfenster.
 1. Code in `sheet/` ändern, `SYNC_VERSION` in `sheet/Sync.gs` erhöhen.
 2. Oben in `release-notes.json` einen Eintrag mit derselben Version anlegen.
 3. `node build-release.js` → erzeugt `dist/sheet/release.json`, `release-meta.json` und `sheet/Release.html`.
-4. Auf `main` pushen. Alle Sheets ab 3.5 sehen das Update dann im Admin (Cache bis 1 h; „Prüfen“ fragt sofort).
+4. Auf `main` pushen. Alle Sheets ab 3.5 sehen das Update dann im Admin (Cache bis 1 h; „Prüfen“ fragt sofort). Ab 3.6 ist GitHub die einzige Update-Quelle.
 
 Regeln, die der Update-Lader braucht:
 - In `Code.gs` und `Sync.gs` oben nur `var`, kein `const`/`let` (prüft build-release.js).
@@ -26,5 +26,4 @@ Regeln, die der Update-Lader braucht:
 - In HTML-Dateien keine `//`-Kommentare (HtmlService).
 - Ändern sich die Berechtigungen (`appsscript.json`), reicht ein Update nicht – dann `boot` erhöhen und die Vorlage neu kopieren lassen.
 
-**Vorlage:** Die Vorlage (Google Sheet) bleibt die Kopiervorlage für neue Teams und Ersatzquelle für Updates.
-Nach einem Release dort `sheet/*` einspielen und eine neue Version bereitstellen, damit neue Kopien gleich aktuell sind.
+**Vorlage:** Die Vorlage (Google Sheet) ist nur noch die Kopiervorlage für neue Teams. Eine frische Kopie holt sich über Admin → Updates die neueste Version von GitHub; die Vorlage muss also nicht bei jedem Release nachgezogen werden.
