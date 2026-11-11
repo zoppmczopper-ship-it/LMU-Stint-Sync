@@ -336,6 +336,7 @@ a.lnk:hover{border-color:var(--accent)}
   <div id="sheetState" style="margin-top:10px"></div>
   <div class="btns"><button id="recheck">Status prüfen</button></div>
   <details id="addTeam" style="margin-top:12px"><summary style="cursor:pointer">Team hinzufügen</summary>
+    <div id="inviteNote" style="display:none;margin:8px 0;padding:8px 10px;border:1px solid #2fbf71;border-radius:8px">Einladung erkannt – der Link ist schon eingetragen. Jetzt auf <b>Hinzufügen</b> klicken.</div>
     <label for="tName">Name (leer = Name des Sheets)</label>
     <input type="text" id="tName" placeholder="z. B. Endurance-Team">
     <label for="url">Web-App-Link des Team-Sheets</label>
@@ -464,5 +465,9 @@ $('recheck').onclick=function(){post('/api/recheck').then(function(){toast('Stat
 $('saveDriver').onclick=function(){post('/api/config',{driver:$('driver').value}).then(function(){editing.driver=false;toast('Name gespeichert');});};
 $('noBrowser').onchange=function(){post('/api/config',{noBrowser:this.checked});};
 $('sim').onclick=function(){if(confirm('Zwei kurze Test-Stints (Session „Training“) ins Sheet schicken?'))post('/api/simulate').then(function(){toast('Testdaten werden gesendet');});};
+(function(){try{var q=new URLSearchParams(location.search),u=q.get('sheet');
+  if(!u||!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(u))return;
+  $('url').value=u;$('tName').value=(q.get('team')||'').slice(0,60);editing.url=true;editing.tName=true;
+  $('addTeam').open=true;$('inviteNote').style.display='';history.replaceState(null,'',location.pathname);}catch(e){}})();
 poll(); setInterval(poll,1500);
 </script></body></html>`
