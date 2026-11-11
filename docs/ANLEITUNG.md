@@ -203,3 +203,9 @@ gleichzeitig, überschreibt sich nichts mehr.
 ## UPDATES ÜBER GITHUB (exe 2.6.5 + Sheet 3.6)
 - **exe:** Beim Start (und alle 6 h) schaut die exe auf GitHub nach einer neueren Version. Gibt es eine, erscheint oben im Einstellungsfenster „Neue Version … verfügbar“ mit Link zum Download. Alte exe schließen, neue starten – die Einstellungen (lmu-stint-sync.json) bleiben.
 - **Sheet:** Admin → Updates holt neue Versionen ausschließlich von GitHub (Ordner `dist/sheet` im Repository). Sheets bis 3.4 holen sich einmalig über die alte Vorlage die Version 3.6, danach nur noch GitHub.
+
+## FAHRER EINLADEN (Sheet 3.7 + exe 2.6.6)
+- **Admin → Fahrer einladen:** fertiger Einladungstext (änderbar) mit „Per WhatsApp teilen“ und „Text kopieren“.
+- Der Text enthält den Link zur **Einladungsseite** (`…/exec?view=join`): Download der exe von GitHub, Hinweis „Enable Plugins“, den Team-Link zum Kopieren und den Knopf **„In der exe übernehmen“**.
+- „In der exe übernehmen“ öffnet das exe-Fenster (läuft die exe auf demselben PC) mit schon eingetragenem Team-Link und Team-Namen – nur noch „Hinzufügen“ klicken. Braucht exe 2.6.6; mit älteren exes den Link von Hand einfügen.
+- Danach wie gewohnt: Fahrer erscheint im Admin unter „Fahrer & Geräte“ und wird freigegeben.
