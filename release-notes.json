@@ -1,5 +1,13 @@
 [
  {
+  "v": "3.7",
+  "date": "11.11.2026",
+  "notes": [
+   "Admin: „Fahrer einladen“ – fertiger Einladungstext, per WhatsApp teilen oder kopieren",
+   "Neue Einladungsseite (…/exec?view=join): exe-Download von GitHub, Team-Link zum Kopieren und Knopf „In der exe übernehmen“ (trägt das Team direkt ein, ab exe 2.6.6)"
+  ]
+ },
+ {
   "v": "3.6",
   "date": "11.11.2026",
   "notes": [
