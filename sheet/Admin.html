@@ -32,55 +32,94 @@
   .upd b{font-size:13px}
   .upd ul{margin:4px 0 0 16px;padding:0}
   .upd.warn{border-color:#fbd38d;background:#fef7e0}
+  .tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 10px;position:sticky;top:0;background:#fff;padding:4px 0 6px;border-bottom:1px solid #e0e0e0;z-index:2}
+  .tabs button{border-radius:99px;padding:4px 10px;font-size:12px}
+  .tabs button.on{background:#1a73e8;border-color:#1a73e8;color:#fff}
+  .bdg{display:none;margin-left:5px;background:#d93025;color:#fff;border-radius:99px;font-size:10px;font-weight:700;padding:0 5px}
+  .bdg.show{display:inline-block}
+  .tab{display:none}
+  .tab.on{display:block}
+  .tab h2:first-child{margin-top:4px}
 </style>
 </head>
 <body>
 <div id="updBanner"></div>
-<h2>Fahrer &amp; Geräte</h2>
-<div id="drivers" class="muted">lädt…</div>
-
-<h2>Events</h2>
-<div id="events" class="muted">lädt…</div>
-<div class="btns"><button class="primary" id="newEvent">Neues Event planen …</button></div>
-<div class="muted" id="planInfo" style="margin-top:8px"></div>
-<div class="btns"><button id="resetPlan">Plan-Zuordnung zurücksetzen</button></div>
-
-<h2>Einstellungen</h2>
-<div class="row">
-  <div><label>Automatisch eintragen</label><select id="auto"><option>ja</option><option>nein</option></select></div>
-  <div><label>Neue Fahrer sofort frei</label><select id="autoApprove"><option>nein</option><option>ja</option></select></div>
-</div>
-<label>Livestream (YouTube/Twitch-Link)</label>
-<input id="stream" placeholder="leer = kein Video">
-<label>Discord-Webhook</label>
-<input id="discord" placeholder="leer = kein Discord">
-<div class="row">
-  <div><label>Discord-Live-Nachricht</label><select id="discordLive"><option>ja</option><option>nein</option></select></div>
-  <div><label>&nbsp;</label><button id="testDiscord">Discord testen</button></div>
-</div>
-<div class="btns" style="margin-top:10px"><button class="primary" id="save">Speichern</button></div>
-
-<h2>Web-App</h2>
-<div class="muted">Diesen Link in der exe unter „Team-Sheet“ eintragen:</div>
-<div class="url" id="url">–</div>
-<div class="btns">
-  <button id="copy">Link kopieren</button>
-  <button id="deploy">Einrichtungs-Anleitung</button>
-</div>
-<div class="muted" id="links" style="margin-top:6px"></div>
-
-<h2>Fahrer einladen</h2>
-<div class="muted">Schick neuen Fahrern diese Einladung – mit Link zur Einladungsseite (exe-Download von GitHub, Team-Link zum Kopieren bzw. direkt in die exe übernehmen).</div>
-<textarea id="invText" rows="9" style="width:100%;box-sizing:border-box;font:12px/1.4 Roboto,Arial,sans-serif;margin-top:6px;border:1px solid #dadce0;border-radius:4px;padding:6px"></textarea>
-<div class="btns">
-  <button class="primary" id="invWa">Per WhatsApp teilen</button>
-  <button id="invCopy">Text kopieren</button>
-  <button id="invOpen">Einladungsseite ansehen</button>
+<div class="tabs" id="tabs">
+  <button data-t="fahrer">Fahrer<span class="bdg" id="bdgFahrer"></span></button>
+  <button data-t="events">Events</button>
+  <button data-t="einladen">Einladen</button>
+  <button data-t="einst">Einstellungen</button>
+  <button data-t="system">System<span class="bdg" id="bdgSystem"></span></button>
 </div>
 
-<h2>Updates</h2>
-<div class="muted" id="updInfo">prüfe …</div>
-<div class="btns" id="updBtns"></div>
+<div class="tab" data-tab="fahrer">
+  <h2>Fahrer &amp; Geräte</h2>
+  <div id="drivers" class="muted">lädt…</div>
+  <div class="muted" style="margin-top:8px">Neue Fahrer einladen: Reiter „Einladen“.</div>
+</div>
+
+<div class="tab" data-tab="events">
+  <h2>Events</h2>
+  <div id="events" class="muted">lädt…</div>
+  <div class="btns"><button class="primary" id="newEvent">Neues Event planen …</button></div>
+  <div class="muted" id="planInfo" style="margin-top:8px"></div>
+  <div class="btns"><button id="resetPlan">Plan-Zuordnung zurücksetzen</button></div>
+
+  <h2>Stint-Anmeldung</h2>
+  <div class="muted">Fahrer tragen sich auf <a id="stLink">der Anmeldeseite</a> oder in der exe für Stints ein.</div>
+  <label>Teampasswort für die Webseite <span id="pwState" class="st"></span></label>
+  <div class="row">
+    <div style="flex:2"><input id="stPw" type="password" autocomplete="new-password" placeholder="neues Passwort (min. 4 Zeichen)"></div>
+    <div style="flex:0 0 auto"><button id="stPwSave">Setzen</button></div>
+  </div>
+  <div class="btns"><button id="stPwOff">Ohne Passwort</button></div>
+  <div class="muted" style="margin-top:4px">Ohne Passwort kann sich jeder mit dem Link eintragen. Über die exe braucht es kein Passwort – die ist ohnehin angemeldet.</div>
+</div>
+
+<div class="tab" data-tab="einladen">
+  <h2>Fahrer einladen</h2>
+  <div class="muted">Schick neuen Fahrern diese Einladung – mit Link zur Einladungsseite (exe-Download von GitHub, Team-Link zum Kopieren bzw. direkt in die exe übernehmen).</div>
+  <textarea id="invText" rows="11" style="width:100%;box-sizing:border-box;font:12px/1.4 Roboto,Arial,sans-serif;margin-top:6px;border:1px solid #dadce0;border-radius:4px;padding:6px"></textarea>
+  <div class="btns">
+    <button class="primary" id="invWa">Per WhatsApp teilen</button>
+    <button id="invCopy">Text kopieren</button>
+    <button id="invOpen">Einladungsseite ansehen</button>
+  </div>
+</div>
+
+<div class="tab" data-tab="einst">
+  <h2>Einstellungen</h2>
+  <div class="row">
+    <div><label>Automatisch eintragen</label><select id="auto"><option>ja</option><option>nein</option></select></div>
+    <div><label>Neue Fahrer sofort frei</label><select id="autoApprove"><option>nein</option><option>ja</option></select></div>
+  </div>
+  <label>Livestream (YouTube/Twitch-Link)</label>
+  <input id="stream" placeholder="leer = kein Video">
+  <h2>Discord</h2>
+  <label>Discord-Webhook</label>
+  <input id="discord" placeholder="leer = kein Discord">
+  <div class="row">
+    <div><label>Discord-Live-Nachricht</label><select id="discordLive"><option>ja</option><option>nein</option></select></div>
+    <div><label>&nbsp;</label><button id="testDiscord">Discord testen</button></div>
+  </div>
+  <div class="btns" style="margin-top:10px"><button class="primary" id="save">Speichern</button></div>
+  <div class="muted" style="margin-top:6px">Weitere Werte (Ampel-Grenzen, Reifen/Bremsen) im Tab „Sync-Einstellungen“.</div>
+</div>
+
+<div class="tab" data-tab="system">
+  <h2>Web-App</h2>
+  <div class="muted">Diesen Link in der exe unter „Team-Sheet“ eintragen:</div>
+  <div class="url" id="url">–</div>
+  <div class="btns">
+    <button id="copy">Link kopieren</button>
+    <button id="deploy">Einrichtungs-Anleitung</button>
+  </div>
+  <div class="muted" id="links" style="margin-top:6px"></div>
+
+  <h2>Updates</h2>
+  <div class="muted" id="updInfo">prüfe …</div>
+  <div class="btns" id="updBtns"></div>
+</div>
 
 <div id="msg"></div>
 <div class="muted" style="margin-top:14px" id="ver"></div>
@@ -98,8 +137,22 @@ function call(fn, args, done) {
   r[fn].apply(r, args || []);
 }
 
+var TAB = 'fahrer';
+try { TAB = localStorage.getItem('lmuAdminTab') || 'fahrer'; } catch (e) { /* egal */ }
+function showTab(t) {
+  TAB = t;
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (x) { x.className = 'tab' + (x.getAttribute('data-tab') === t ? ' on' : ''); });
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (x) { x.className = x.getAttribute('data-t') === t ? 'on' : ''; });
+  try { localStorage.setItem('lmuAdminTab', t); } catch (e) { /* egal */ }
+}
+$('tabs').onclick = function (e) { var b = e.target.closest('button'); if (b) showTab(b.getAttribute('data-t')); };
+showTab(TAB);
 function render(d) {
   D = d;
+  var wait = (d.drivers || []).filter(function (x) { return x.status === 'wartet'; }).length;
+  $('bdgFahrer').textContent = wait; $('bdgFahrer').className = 'bdg' + (wait ? ' show' : '');
+  $('pwState').textContent = d.stintPw ? 'aktiv' : 'aus'; $('pwState').className = 'st ' + (d.stintPw ? 'freigegeben' : 'wartet');
+  if (d.url) $('stLink').href = d.url + '?view=stints';
   var list = d.drivers;
   if (!list.length) {
     $('drivers').innerHTML = 'Noch keine Anmeldungen. Startet die exe mit dem Web-App-Link, erscheinen die Fahrer hier.';
@@ -175,6 +228,13 @@ $('events').addEventListener('click', function (e) {
   var n = b.getAttribute('data-ev');
   if (confirm('„' + n + '“ als aktives Event setzen? Neue Renn-Stints werden dann dort eingetragen.')) call('adminActivateEvent', [n], function (d) { render(d); msg('Aktives Event: ' + n, true); });
 });
+$('stPwSave').onclick = function () {
+  var v = $('stPw').value.trim(); if (!v) return msg('Bitte ein Passwort eingeben', false);
+  call('adminSetStintPw', [v], function (d) { $('stPw').value = ''; render(d); msg('Teampasswort gesetzt – gib es deinen Fahrern (z. B. per WhatsApp)', true); });
+};
+$('stPwOff').onclick = function () {
+  if (confirm('Passwort entfernen? Dann kann sich jeder mit dem Link für Stints eintragen.')) call('adminSetStintPw', [''], function (d) { render(d); msg('Stint-Anmeldung ohne Passwort', true); });
+};
 $('newEvent').onclick = function () { call('showEventDialog', []); };
 $('deploy').onclick = function () { call('setupAndDeploy', []); };
 var INV_EDITED = false, GH = 'https:' + '//github.com/zoppmczopper-ship-it/LMU-Stint-Sync';
@@ -213,11 +273,12 @@ $('copy').onclick = function () {
 function vtxt(v) { return String(v || '').replace('.', ','); }
 function renderUpd(u) {
   var b = '', info = '', btn = '<button id="updCheck">Nach Updates suchen</button>';
+  $('bdgSystem').textContent = u.available ? '1' : ''; $('bdgSystem').className = 'bdg' + (u.available ? ' show' : '');
   if (u.available) {
     b = '<div class="upd"><b>Update verfügbar: ' + esc(u.current) + ' → ' + esc(u.latest) + '</b>' + (u.date ? ' <span class="muted">(' + esc(u.date) + ')</span>' : '') +
       (u.notes && u.notes.length ? '<ul>' + u.notes.map(function (h) { return (h.notes || []).map(function (n) { return '<li>' + (u.notes.length > 1 ? '<b>' + esc(h.v) + ':</b> ' : '') + esc(n) + '</li>'; }).join(''); }).join('') + '</ul>' : '') +
       '<div class="btns"><button class="primary" id="updInstall">Update übernehmen</button></div>' +
-      '<div class="muted" style="margin-top:4px">Dauert ein paar Sekunden. Kein neues Bereitstellen nötig, der Web-App-Link bleibt gleich. Zurück geht jederzeit unter „Updates“.</div></div>';
+      '<div class="muted" style="margin-top:4px">Dauert ein paar Sekunden. Kein neues Bereitstellen nötig, der Web-App-Link bleibt gleich. Zurück geht jederzeit unter System → Updates.</div></div>';
   } else if (u.needsTemplate) {
     b = '<div class="upd warn"><b>Version ' + esc(u.latest) + ' verfügbar</b><div class="muted">Diese Version braucht neue Berechtigungen und lässt sich nicht per Klick übernehmen – bitte die Vorlage neu kopieren.</div></div>';
   }

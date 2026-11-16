@@ -7,7 +7,7 @@
  *  - Einrichtung: Menü „LMU Sync“ → „Einrichten / Web-App bereitstellen“
  */
 
-var SYNC_VERSION = '3.9';
+var SYNC_VERSION = '3.10';
 var SYNC_TZ = 'Europe/Vienna';
 
 var SYNC_SHEETS = {
@@ -593,10 +593,22 @@ function stintSet_(evName, row, driver, me) {
 
 /** Webseite: ?api=stints[&event=…][&do=set&row=…&driver=…&as=…] (ohne Anmeldung – Vertrauen im Team) */
 function stintsApi_(p) {
+  const pwHash = PropertiesService.getScriptProperties().getProperty('stintPw');
+  let d;
   try {
-    if (p.do === 'set') return stintSet_(p.event, p.row, p.driver || '', p.as || p.driver || '');
-    return stintsData_(p.event, p.as || '');
-  } catch (e) { const d = stintsData_(p.event, p.as || ''); d.err = String(e.message || e); return d; }
+    if (p.do === 'set' || p.do === 'login') {
+      if (pwHash) {
+        // einfache Bremse gegen Durchprobieren: max. 20 Fehlversuche pro 10 min
+        const c = CacheService.getScriptCache(), bad = Number(c.get('stPwBad') || 0);
+        if (bad >= 20) throw new Error('Zu viele falsche Passwörter – bitte in 10 Minuten nochmal.');
+        if (hash_('lmu-stint:' + String(p.pw || '').trim()) !== pwHash) { c.put('stPwBad', String(bad + 1), 600); throw new Error('Teampasswort falsch.'); }
+      }
+      d = p.do === 'set' ? stintSet_(p.event, p.row, p.driver || '', p.as || p.driver || '') : stintsData_(p.event, p.as || '');
+      if (p.do === 'login') d.pwOk = true;
+    } else d = stintsData_(p.event, p.as || '');
+  } catch (e) { d = stintsData_(p.event, p.as || ''); d.err = String(e.message || e); if (/passw/i.test(d.err)) d.pwBad = true; }
+  d.needPw = !!pwHash;
+  return d;
 }
 
 /* ======================= Ist-Zeiten in den Plan-Tab ======================= */
@@ -839,7 +851,8 @@ function adminData() {
   const s = syncSettings_();
   const tabs = SpreadsheetApp.getActiveSpreadsheet().getSheets().map(x => x.getName())
     .filter(n => Object.keys(SYNC_SHEETS).indexOf(n) === -1);
-  return { drivers: drivers, settings: s, tabs: tabs, events: eventList_(), url: webAppUrl_(), plan: planState_(), version: SYNC_VERSION, team: SpreadsheetApp.getActiveSpreadsheet().getName() };
+  return { drivers: drivers, settings: s, tabs: tabs, events: eventList_(), url: webAppUrl_(), plan: planState_(), version: SYNC_VERSION, team: SpreadsheetApp.getActiveSpreadsheet().getName(),
+    stintPw: !!PropertiesService.getScriptProperties().getProperty('stintPw') };
 }
 
 function adminSetStatus(device, status) {
@@ -866,6 +879,19 @@ function adminSaveSettings(values) {
   adminGuard_();
   ['Plan-Tab', 'Automatisch eintragen', 'Neue Fahrer automatisch freigeben', 'Stream-URL', 'Discord-Webhook', 'Discord-Live-Nachricht']
     .forEach(k => { if (k in values) syncSetSetting_(k, String(values[k]).trim()); });
+  return adminData();
+}
+
+/** Admin: Teampasswort für die Stint-Anmeldung per Webseite (leer = ohne Passwort). Gespeichert wird nur ein Hash. */
+function adminSetStintPw(pw) {
+  adminGuard_();
+  pw = String(pw || '').trim();
+  const props = PropertiesService.getScriptProperties();
+  if (!pw) props.deleteProperty('stintPw');
+  else {
+    if (pw.length < 4) throw new Error('Bitte mindestens 4 Zeichen.');
+    props.setProperty('stintPw', hash_('lmu-stint:' + pw));
+  }
   return adminData();
 }
 
