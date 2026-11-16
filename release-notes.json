@@ -1,5 +1,13 @@
 [
  {
+  "v": "3.10",
+  "date": "16.11.2026",
+  "notes": [
+   "Admin übersichtlicher: Reiter Fahrer · Events · Einladen · Einstellungen · System (mit Hinweis-Zahl bei wartenden Fahrern und verfügbarem Update)",
+   "Stint-Anmeldung: optionales Teampasswort für die Webseite (Admin → Events). Ansehen geht weiter ohne, Eintragen nur mit Passwort; über die exe braucht es keins"
+  ]
+ },
+ {
   "v": "3.9",
   "date": "16.11.2026",
   "notes": [
