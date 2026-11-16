@@ -209,3 +209,10 @@ gleichzeitig, überschreibt sich nichts mehr.
 - Der Text enthält den Link zur **Einladungsseite** (`…/exec?view=join`): Download der exe von GitHub, Hinweis „Enable Plugins“, den Team-Link zum Kopieren und den Knopf **„In der exe übernehmen“**.
 - „In der exe übernehmen“ öffnet das exe-Fenster (läuft die exe auf demselben PC) mit schon eingetragenem Team-Link und Team-Namen – nur noch „Hinzufügen“ klicken. Braucht exe 2.6.6; mit älteren exes den Link von Hand einfügen.
 - Danach wie gewohnt: Fahrer erscheint im Admin unter „Fahrer & Geräte“ und wird freigegeben.
+
+## PACE JE FAHRER & FAHRERWECHSEL (Sheet 3.8)
+- **Neues Event:** Sobald die Strecke eingetragen ist (oder aus Race Control übernommen), holt der Dialog eure bisherigen Runden auf dieser Strecke und Klasse (Training, Quali, Rennen; Median ohne die langsamsten 10 %). Die Rundenzeit wird automatisch auf den Team-Median gesetzt.
+- **Pace je Fahrer:** Im Event-Tab rechnet jeder Stint mit der Pace seines Fahrers (Spalte W). Die Werte stehen in der Pace-Tabelle ab Spalte AA und sind änderbar; leer = Rundenzeit B2.
+- **Pace aktualisieren:** Admin → Events → „Pace aktualisieren“ holt neue Werte, z. B. nach dem Training am Renntag.
+- **Früherer/späterer Fahrerwechsel:** Beim Stintende schreibt das Sheet das echte Ende (Rennzeit) in Spalte X. Alle folgenden Stints rechnen ab diesem Zeitpunkt weiter (+ Boxenstopp), Ortszeiten und Pausen passen sich an. Steigt ein anderer Fahrer ein als geplant, gilt dessen Pace (Spalte M „Fahrer (Ist)“).
+- Gilt für Events, die ab Sheet 3.8 angelegt werden.
