@@ -1,5 +1,15 @@
 [
  {
+  "v": "3.8",
+  "date": "16.11.2026",
+  "notes": [
+   "Neues Event: Rundenzeit und Pace je Fahrer kommen automatisch aus euren bisherigen Runden auf der Strecke (Training, Quali, Rennen) – sobald die Strecke eingetragen ist",
+   "Stintplan rechnet jeden Stint mit der Pace seines Fahrers (Spalte W, Pace-Tabelle ab Spalte AA, änderbar); Gesamtrunden entsprechend",
+   "Früherer oder späterer Fahrerwechsel: die folgenden Stints rechnen automatisch ab dem echten Stintende weiter (Ist-Ende in Spalte X)",
+   "Admin: „Pace aktualisieren“ je Event holt neue Werte, z. B. nach dem Training"
+  ]
+ },
+ {
   "v": "3.7",
   "date": "11.11.2026",
   "notes": [
