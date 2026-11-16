@@ -216,3 +216,10 @@ gleichzeitig, überschreibt sich nichts mehr.
 - **Pace aktualisieren:** Admin → Events → „Pace aktualisieren“ holt neue Werte, z. B. nach dem Training am Renntag.
 - **Früherer/späterer Fahrerwechsel:** Beim Stintende schreibt das Sheet das echte Ende (Rennzeit) in Spalte X. Alle folgenden Stints rechnen ab diesem Zeitpunkt weiter (+ Boxenstopp), Ortszeiten und Pausen passen sich an. Steigt ein anderer Fahrer ein als geplant, gilt dessen Pace (Spalte M „Fahrer (Ist)“).
 - Gilt für Events, die ab Sheet 3.8 angelegt werden.
+
+## STINT-ANMELDUNG (Sheet 3.9 + exe 2.6.7)
+- **Webseite:** `…/exec?view=stints` (Link im Admin und in der Einladung). Oben „Ich bin“ wählen (wird gemerkt) und das Event. Jeder Stint zeigt Zeit, Runden und Pace.
+- **exe:** Karte „Stint-Anmeldung“ → „Laden“. Hier ist klar, wer du bist (angemeldetes Gerät) – niemand kann für dich eintragen.
+- **Übernehmen:** Wer zuerst kommt, bekommt den Stint. Ein Vorschlag aus der Rotation (gelb) kann jeder übernehmen; bestätigte Stints (✓) nur der Fahrer selbst abgeben. Gestartete Stints sind gesperrt.
+- Die Zeiten im Plan rechnen sofort mit der Pace des Fahrers neu (Events ab Sheet 3.8). Im Event-Tab steht der Fahrer in Spalte G, „ja“ in Spalte Y = selbst angemeldet. Der Team-Chef kann jederzeit direkt im Tab ändern.
+- Mit Discord-Webhook gibt es eine Meldung bei jeder An- und Abmeldung.
