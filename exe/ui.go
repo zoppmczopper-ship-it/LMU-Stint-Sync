@@ -67,6 +67,29 @@ func startUI(app *App) (string, error) {
 		logf("Einstellungen gespeichert")
 		writeJSON(w, map[string]any{"ok": true})
 	})
+	// Stint-Anmeldung: Liste holen / Stint übernehmen oder abgeben (beim aktiven Team, als angemeldetes Gerät)
+	mux.HandleFunc("/api/stints", func(w http.ResponseWriter, r *http.Request) {
+		if !postOK(w, r) {
+			return
+		}
+		var in struct {
+			Event string `json:"event"`
+			Row   int    `json:"row"`
+			Take  *bool  `json:"take"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&in)
+		m := Msg{"action": "stints", "event": in.Event}
+		if in.Take != nil && in.Row > 0 {
+			m = Msg{"action": "stint_set", "event": in.Event, "row": in.Row, "take": *in.Take}
+		}
+		data, err := app.out.Request(m)
+		if err != nil {
+			writeJSON(w, map[string]any{"ok": false, "err": err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(data)
+	})
 	// Teams: hinzufügen, umbenennen, entfernen, aktiv setzen („ich fahre gerade für …“)
 	mux.HandleFunc("/api/teams", func(w http.ResponseWriter, r *http.Request) {
 		if !postOK(w, r) {
@@ -379,6 +402,13 @@ a.lnk:hover{border-color:var(--accent)}
   </div>
 </div>
 
+<div class="card" style="margin-top:14px" id="stCard">
+  <h2>Stint-Anmeldung</h2>
+  <div class="mute" style="font-size:12px">Für Stints im Rennplan des aktiven Teams eintragen – die Zeiten rechnen mit deiner Pace neu. Gelb = Vorschlag aus der Rotation.</div>
+  <div class="btns" style="margin-top:8px"><select id="stEv" style="flex:1;padding:7px;border-radius:8px;background:#0b0e13;color:var(--text);border:1px solid var(--line)"></select><button id="stLoad">Laden</button></div>
+  <div id="stList" style="margin-top:10px"></div>
+</div>
+
 <div class="card" style="margin-top:14px">
   <h2>Übertragung</h2>
   <div class="kv" id="tx"></div>
@@ -469,5 +499,36 @@ $('sim').onclick=function(){if(confirm('Zwei kurze Test-Stints (Session „Train
   if(!u||!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(u))return;
   $('url').value=u;$('tName').value=(q.get('team')||'').slice(0,60);editing.url=true;editing.tName=true;
   $('addTeam').open=true;$('inviteNote').style.display='';history.replaceState(null,'',location.pathname);}catch(e){}})();
+var ST=null;
+function stHM(ms){var m=Math.round(ms/60000);return Math.floor(m/60)+':'+('0'+m%60).slice(-2);}
+function stT(ms,day){if(!ms)return '–';var o={hour:'2-digit',minute:'2-digit'};if(day){o.weekday='short';o.day='2-digit';o.month='2-digit';}return new Date(ms).toLocaleString('de-AT',o);}
+function stRender(d){
+  ST=d;
+  if(d.err) toast(d.err);
+  if(!d.rows){ $('stList').innerHTML='<div class="mute">'+esc(d.error||d.err||'Dieses Team-Sheet kennt die Stint-Anmeldung noch nicht – im Admin „Update übernehmen“ (ab Sheet 3.9).')+'</div>'; return; }
+  $('stEv').innerHTML=(d.events||[]).map(function(e){return '<option value="'+esc(e.name)+'"'+(e.name===d.event?' selected':'')+'>'+esc(e.name)+' · '+stT(e.race,true)+'</option>';}).join('')||'<option value="">kein geplantes Event</option>';
+  var me=d.me||'';
+  var mine=d.rows.filter(function(r){return r.driver===me&&r.signed;});
+  var h='<div class="mute" style="margin-bottom:6px">Du bist <b>'+esc(me||'?')+'</b> · '+mine.length+' Stint'+(mine.length===1?'':'s')+' angemeldet</div>';
+  h+=d.rows.map(function(r){
+    var past=r.started||r.done,isMe=r.driver===me,who,btn='';
+    if(past) who='<span class="mute">'+(r.done?'gefahren':'läuft')+(r.ist?' – '+esc(r.ist):'')+'</span>';
+    else if(r.driver&&r.signed) who=isMe?'<b style="color:var(--ok)">✓ Du</b>':'✓ '+esc(r.driver);
+    else if(r.driver) who='<span style="color:var(--warn)">Vorschlag: '+esc(r.driver)+'</span>';
+    else who='<span class="mute">frei</span>';
+    if(!past){
+      if(isMe&&r.signed) btn='<button data-st="'+r.row+'" data-take="0">Abgeben</button>';
+      else if(!r.signed||!r.driver) btn='<button class="primary" data-st="'+r.row+'" data-take="1">'+(isMe?'Bestätigen':'Übernehmen')+'</button>';
+    }
+    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)'+(past?';opacity:.55':'')+'"><b style="width:28px;text-align:center">'+r.nr+'</b>'+
+      '<div style="flex:1"><div>'+stT(r.start,true)+' – '+stT(r.end)+' <span class="mute">'+(r.laps?'· '+r.laps+' Rd':'')+(r.start&&r.end?' · '+stHM(r.end-r.start)+' h':'')+'</span></div><div style="font-size:12px">'+who+'</div></div>'+btn+'</div>';
+  }).join('')||'<div class="mute">Keine Stints in diesem Event.</div>';
+  $('stList').innerHTML=h;
+}
+function stLoad(ev){ $('stList').innerHTML='<div class="mute">lädt …</div>'; post('/api/stints',{event:ev||''}).then(stRender).catch(function(){toast('Keine Verbindung');}); }
+$('stLoad').onclick=function(){stLoad($('stEv').value);};
+$('stEv').onchange=function(){stLoad(this.value);};
+$('stList').onclick=function(e){var b=e.target.closest('button');if(!b||!ST)return;b.disabled=true;var take=b.getAttribute('data-take')==='1';
+  post('/api/stints',{event:ST.event,row:+b.getAttribute('data-st'),take:take}).then(function(d){stRender(d);if(!d.err&&d.rows)toast(take?'Eingetragen – Zeiten neu berechnet':'Abgegeben');});};
 poll(); setInterval(poll,1500);
 </script></body></html>`

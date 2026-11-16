@@ -321,6 +321,42 @@ type reply struct {
 }
 
 func (s *Sender) post(url string, payload Msg) (*reply, error) {
+	data, unreadable, err := s.postRaw(url, payload, 8192)
+	if err != nil {
+		return nil, err
+	}
+	if unreadable {
+		return &reply{OK: true, unreadable: true}, nil
+	}
+	var r reply
+	if json.Unmarshal(data, &r) != nil {
+		if strings.Contains(string(data), "accounts.google.com") || strings.Contains(string(data), "ServiceLogin") {
+			return nil, fmt.Errorf("Web-App verlangt eine Anmeldung – beim Bereitstellen „Zugriff: Jeder“ wählen")
+		}
+		return nil, fmt.Errorf("unerwartete Antwort – stimmt der Link?")
+	}
+	return &r, nil
+}
+
+// Request schickt eine Anfrage ans aktive Team-Sheet und liefert die rohe JSON-Antwort (z. B. Stint-Anmeldung).
+func (s *Sender) Request(payload Msg) ([]byte, error) {
+	s.mu.Lock()
+	url := s.url
+	s.mu.Unlock()
+	if url == "" {
+		return nil, fmt.Errorf("kein Team-Sheet eingetragen")
+	}
+	data, unreadable, err := s.postRaw(url, payload, 512*1024)
+	if err != nil {
+		return nil, err
+	}
+	if unreadable {
+		return nil, fmt.Errorf("Antwort des Sheets nicht lesbar (DNS-Blocker? script.googleusercontent.com freigeben)")
+	}
+	return data, nil
+}
+
+func (s *Sender) postRaw(url string, payload Msg, limit int64) ([]byte, bool, error) {
 	s.mu.Lock()
 	name := s.driver
 	if name == "" {
@@ -338,33 +374,26 @@ func (s *Sender) post(url string, payload Msg) (*reply, error) {
 	noFollow.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	resp, err := noFollow.Post(url, "application/json", bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("keine Verbindung zum Sheet: %v", shortErr(err))
+		return nil, false, fmt.Errorf("keine Verbindung zum Sheet: %v", shortErr(err))
 	}
 	if resp.StatusCode == http.StatusFound || resp.StatusCode == http.StatusSeeOther || resp.StatusCode == http.StatusMovedPermanently {
 		loc := resp.Header.Get("Location")
 		resp.Body.Close()
 		if loc == "" {
-			return &reply{OK: true, unreadable: true}, nil
+			return nil, true, nil
 		}
 		r2, err := s.client.Get(loc)
 		if err != nil {
 			s.mu.Lock()
 			s.Warn = "Antwort des Sheets nicht abrufbar (DNS-Blocker? script.googleusercontent.com freigeben) – Daten kommen trotzdem an"
 			s.mu.Unlock()
-			return &reply{OK: true, unreadable: true}, nil
+			return nil, true, nil
 		}
 		resp = r2
 	}
 	defer resp.Body.Close()
-	data, _ := io.ReadAll(io.LimitReader(resp.Body, 8192))
-	var r reply
-	if json.Unmarshal(data, &r) != nil {
-		if strings.Contains(string(data), "accounts.google.com") || strings.Contains(string(data), "ServiceLogin") {
-			return nil, fmt.Errorf("Web-App verlangt eine Anmeldung – beim Bereitstellen „Zugriff: Jeder“ wählen")
-		}
-		return nil, fmt.Errorf("unerwartete Antwort (HTTP %d) – stimmt der Link?", resp.StatusCode)
-	}
-	return &r, nil
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, limit))
+	return data, false, nil
 }
 
 func shortErr(err error) string {
