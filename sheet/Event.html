@@ -178,8 +178,14 @@ function opts() {
     drivers: list.filter(function (d) { return d.on; }).map(function (d) { return d.name; }),
     activate: $('activate').value === '1', rcUrl: rcUrl,
     cons: $('cons').value, consUnit: $('consUnit').value, reserve: $('reserve').value,
-    practice: $('practice').value, quali: $('quali').value, gap: $('gap').value
+    practice: $('practice').value, quali: $('quali').value, gap: $('gap').value,
+    track: $('track').value, cls: $('cls').value, paces: paceMap()
   };
+}
+var OWN = null, LAP_TOUCHED = false;
+function paceMap() {
+  if (!OWN) return null;
+  var m = {}; OWN.drivers.forEach(function (d) { m[d.driver] = { sec: d.median, laps: d.laps }; }); return m;
 }
 function preview() {
   var o = opts(), dur = sec(o.duration, 'h'), lap = sec(o.lap, 's'), pit = sec(o.pit, 's'), n = +o.lapsPerStint || 1;
@@ -203,7 +209,10 @@ function preview() {
   if (o.drivers.length) {
     var per = Math.max(1, +o.stintsPerDriver || 1), cnt = {};
     for (var i = 0; i < stints; i++) { var d = o.drivers[Math.floor(i / per) % o.drivers.length]; cnt[d] = (cnt[d] || 0) + 1; }
-    t += '\n' + o.drivers.map(function (d) { return d + ': ' + (cnt[d] || 0) + ' Stints (~' + hm((cnt[d] || 0) * st) + ' h)'; }).join(' · ');
+    var pm = o.paces || {};
+    t += '\n' + o.drivers.map(function (d) { var pl = pm[d] ? pm[d].sec : lap; return d + ': ' + (cnt[d] || 0) + ' Stints (~' + hm((cnt[d] || 0) * n * pl) + ' h)'; }).join(' · ');
+    var withP = o.drivers.filter(function (d) { return pm[d]; });
+    if (withP.length) t += '\nPace je Fahrer (aus euren Runden): ' + o.drivers.map(function (d) { return d + ' ' + (pm[d] ? mmss(pm[d].sec) : mmss(lap) + ' (Rundenzeit, keine Daten)'); }).join(' · ');
   } else t += '\nFahrer bleiben leer – später per Dropdown eintragen.';
   var c = parseFloat(String($('cons').value).replace(',', '.')), rs = parseFloat(String($('reserve').value).replace(',', '.')) || 0;
   if (c > 0) {
@@ -213,9 +222,13 @@ function preview() {
   }
   $('preview').textContent = t;
 }
+$('lap').addEventListener('input', function () { LAP_TOUCHED = true; });
 ['duration', 'lap', 'pit', 'lapsPerStint', 'per', 'cons', 'reserve', 'practice', 'quali', 'gap', 'start'].forEach(function (i) { $(i).oninput = preview; });
 $('consUnit').onchange = preview;
-$('cls').onchange = function () { $('consUnit').value = /lmp2|lmp3/.test(this.value) ? 'l' : 've'; preview(); };
+$('cls').onchange = function () { $('consUnit').value = /lmp2|lmp3/.test(this.value) ? 'l' : 've'; preview(); autoSugg(); };
+var SUGG_T = null;
+function autoSugg() { clearTimeout(SUGG_T); if ($('track').value.trim()) SUGG_T = setTimeout(function () { $('sugBtn').onclick.call($('sugBtn')); }, 300); }
+$('track').addEventListener('change', autoSugg);
 
 /* ---------- Rundenzeit-Vorschlag ---------- */
 function mmss(sec) { var m = Math.floor(sec / 60), r = sec - m * 60; return m + ':' + ('0' + r.toFixed(1)).slice(-4); }
@@ -237,7 +250,11 @@ $('sugBtn').onclick = function () {
   b.disabled = true; $('sugg').innerHTML = '<div class="sg muted">suche Rundenzeiten …</div>';
   google.script.run.withSuccessHandler(function (r) {
     b.disabled = false;
-    var h = '<div class="sg"><div class="muted">' + esc(r.cls) + ' · ' + esc(r.track) + '</div>';
+    OWN = r.own || null;
+    var auto = '';
+    if (OWN && OWN.team > 30 && !LAP_TOUCHED) { $('lap').value = mmss(OWN.team); auto = 'Team-Median ' + mmss(OWN.team) + ' als Rundenzeit übernommen; jeder Fahrer fährt im Plan mit seiner eigenen Pace.'; }
+    preview();
+    var h = '<div class="sg"><div class="muted">' + esc(r.cls) + ' · ' + esc(r.track) + '</div>' + (auto ? '<div class="h" style="color:#137333">✓ ' + esc(auto) + '</div>' : '');
     if (r.own) {
       h += '<div class="h">Eure eigene Pace (' + r.own.laps + ' saubere Runden)</div>';
       h += '<span class="chip" data-lap="' + r.own.team + '">Team-Median ' + mmss(r.own.team) + '</span>';
@@ -265,7 +282,7 @@ $('sugBtn').onclick = function () {
 };
 $('sugg').addEventListener('click', function (e) {
   var c = e.target.closest('.chip'); if (!c) return;
-  if (c.hasAttribute('data-lap')) { $('lap').value = mmss(parseFloat(c.getAttribute('data-lap'))); }
+  if (c.hasAttribute('data-lap')) { $('lap').value = mmss(parseFloat(c.getAttribute('data-lap'))); LAP_TOUCHED = true; }
   if (c.hasAttribute('data-cons')) { $('cons').value = String(c.getAttribute('data-cons')).replace('.', ','); $('consUnit').value = c.getAttribute('data-unit'); }
   preview();
 });
@@ -355,7 +372,7 @@ $('rcLoad').onclick = function () {
 };
 function pickTime(name, local, durSec, url, track, pMin, qMin) {
   $('practice').value = pMin || 0; $('quali').value = qMin || 0; $('gap').value = 0;
-  if (track) $('track').value = track;
+  if (track) { $('track').value = track; autoSugg(); }
   var gc = guessClass(name); if (gc) { $('cls').value = gc; $('cls').onchange(); }
   if (/fixed/i.test(name)) $('setup').value = 'fixed';
   $('name').value = name.replace(/[\[\]*?:\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);

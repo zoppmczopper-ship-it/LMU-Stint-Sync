@@ -122,7 +122,8 @@ function render(d) {
   $('events').innerHTML = ev.length ? ev.map(function (x) {
     return '<div class="drv"><b>' + esc(x.name) + '</b>' + (x.active ? '<span class="st aktiv">aktiv</span>' : '') +
       '<div class="muted">Start ' + esc(x.start || '–') + '</div>' +
-      (x.active ? '' : '<div class="btns"><button data-ev="' + esc(x.name) + '">Als aktives Event setzen</button></div>') + '</div>';
+      '<div class="btns">' + (x.active ? '' : '<button data-ev="' + esc(x.name) + '">Als aktives Event setzen</button>') +
+      (x.pace ? '<button data-pace="' + esc(x.name) + '">Pace aktualisieren</button>' : '') + '</div></div>';
   }).join('') : 'Noch kein Event. „Neues Event planen“ legt einen Plan-Tab mit allen Stints an.';
   $('auto').value = (s['Automatisch eintragen'] || 'ja').toLowerCase();
   $('autoApprove').value = (s['Neue Fahrer automatisch freigeben'] || 'nein').toLowerCase();
@@ -167,6 +168,10 @@ $('resetPlan').onclick = function () {
 $('events').addEventListener('click', function (e) {
   var b = e.target.closest('button');
   if (!b) return;
+  if (b.hasAttribute('data-pace')) {
+    call('adminEventPace', [b.getAttribute('data-pace')], function (r) { render(r.data); msg('Pace für ' + r.updated + ' Fahrer aktualisiert – Zeiten rechnen neu', true); });
+    return;
+  }
   var n = b.getAttribute('data-ev');
   if (confirm('„' + n + '“ als aktives Event setzen? Neue Renn-Stints werden dann dort eingetragen.')) call('adminActivateEvent', [n], function (d) { render(d); msg('Aktives Event: ' + n, true); });
 });
