@@ -7,7 +7,7 @@
  *  - Einrichtung: Menü „LMU Sync“ → „Einrichten / Web-App bereitstellen“
  */
 
-var SYNC_VERSION = '3.8';
+var SYNC_VERSION = '3.9';
 var SYNC_TZ = 'Europe/Vienna';
 
 var SYNC_SHEETS = {
@@ -241,6 +241,15 @@ function doPost(e) {
       auth.server = SYNC_VERSION;
       auth.sheet = SpreadsheetApp.getActiveSpreadsheet().getName();
       return syncJson_(auth);
+    }
+    // Stint-Anmeldung aus der exe (angemeldetes Gerät → Fahrername steht fest)
+    if (body.action === 'stints' || body.action === 'stint_set') {
+      const me = auth.driver && auth.driver !== 'Unbekannt' ? String(auth.driver) : String(body.driver || '');
+      lock.releaseLock();
+      try {
+        const d = body.action === 'stints' ? stintsData_(body.event, me) : stintSet_(body.event, body.row, body.take ? me : '', me);
+        d.ok = true; return syncJson_(d);
+      } catch (e) { const d = stintsData_(body.event, me); d.ok = false; d.err = String(e.message || e); return syncJson_(d); }
     }
     // Name aus der Fahrerliste (Admin kann umbenennen); solange dort nichts Sinnvolles steht: LMU-Spielername übernehmen
     const regName = auth.driver && auth.driver !== 'Unbekannt' ? String(auth.driver) : '';
@@ -504,6 +513,90 @@ function mdEventWindow_(rk, before, after) {
   const n = mdRunEvent_(rk);
   const w = n ? eventWindow_(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(n)) : null;
   return w || eventNow_(Date.now(), before, after, mdBusyEvents_(rk));
+}
+
+/* ======================= Stint-Anmeldung ======================= */
+// Fahrer melden sich vorab für Stints an (Webseite ?view=stints oder exe). Spalte G = Fahrer (Plan),
+// Spalte Y „Angemeldet“ = ja, wenn sich der Fahrer selbst eingetragen hat. Die Rotation aus dem Dialog ist nur ein Vorschlag.
+var ST_SIGN = 25;   // Spalte Y
+
+/** Events, für die man sich noch anmelden kann (Ende in der Zukunft), nach Start sortiert */
+function stintEvents_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet(), now = Date.now(), active = syncSetting_('Plan-Tab');
+  return ss.getSheets().filter(isEventTab_).map(sh => {
+    const w = eventWindow_(sh);
+    return w && w.end > now - 3600e3 ? { name: w.name, start: w.start, race: w.race, end: w.end, active: w.name === active } : null;
+  }).filter(Boolean).sort((a, b) => a.race - b.race);
+}
+
+/** Stints eines Events für die Anmeldung */
+function stintsData_(evName, me) {
+  const events = stintEvents_();
+  const out = { events: events, event: '', me: me || '', drivers: approvedDrivers_(), rows: [], now: Date.now() };
+  const name = evName && events.some(e => e.name === evName) ? evName
+    : ((events.find(e => e.active && e.end > Date.now()) || events.find(e => e.end > Date.now()) || events[0] || {}).name || '');
+  if (!name) return out;
+  out.event = name;
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  const rg = planRange_(sh), n = rg.last - rg.first + 1;
+  if (n < 1) return out;
+  const width = Math.max(ST_SIGN, sh.getLastColumn() >= 23 ? 25 : 14);
+  const v = sh.getRange(rg.first, 1, n, width).getValues();
+  const hasPace = String(sh.getRange(6, 23).getValue()) === 'Pace (Ø Runde)';
+  const paceTxt = hasPace ? sh.getRange(rg.first, 23, n, 1).getDisplayValues() : [];
+  const paceSec = t => { const m = String(t || '').match(/^(\d+):(\d+(?:[.,]\d+)?)$/); return m ? +m[1] * 60 + Number(m[2].replace(',', '.')) : null; };
+  v.forEach((r, i) => {
+    if (!(Number(r[0]) > 0)) return;
+    const ms = d => (d instanceof Date ? d.getTime() : null);
+    out.rows.push({ row: rg.first + i, nr: Number(r[0]), start: ms(r[3]), end: ms(r[4]), laps: r[5] === '' ? null : r[5],
+      driver: String(r[6] || '').trim(), signed: String(r[ST_SIGN - 1] || '') === 'ja', ist: String(r[12] || '').trim(),
+      started: String(r[13] || '').trim() !== '', done: String(r[14] || '').trim() !== '',
+      pace: hasPace ? paceSec(paceTxt[i][0]) : null });
+  });
+  return out;
+}
+
+/** Stint übernehmen (driver) oder abgeben (driver = '') – me = wer es tut */
+function stintSet_(evName, row, driver, me) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(String(evName || ''));
+    if (!sh || !isEventTab_(sh)) throw new Error('Event nicht gefunden');
+    const rg = planRange_(sh);
+    row = Number(row);
+    if (!(row >= rg.first && row <= rg.last)) throw new Error('Stint nicht gefunden');
+    const v = sh.getRange(row, 1, 1, ST_SIGN).getValues()[0];
+    if (String(v[13] || '').trim()) throw new Error('Dieser Stint läuft schon oder ist vorbei.');
+    me = String(me || '').trim();
+    driver = String(driver || '').trim();
+    const cur = String(v[6] || '').trim(), signed = String(v[ST_SIGN - 1] || '') === 'ja';
+    if (driver) {
+      if (approvedDrivers_().indexOf(driver) === -1) throw new Error('„' + driver + '“ ist kein freigegebener Fahrer.');
+      if (signed && cur && cur !== driver) throw new Error('Stint ' + v[0] + ' hat schon ' + cur + ' übernommen.');
+    } else if (!(signed && cur === me) && !(!signed && cur === me)) {
+      throw new Error('Abgeben kann nur, wer den Stint hat.');
+    }
+    if (!String(sh.getRange(6, ST_SIGN).getValue())) sh.getRange(6, ST_SIGN).setValue('Angemeldet').setFontWeight('bold').setBackground('#1f2630').setFontColor('#ffffff').setHorizontalAlignment('center');
+    sh.getRange(row, 7).setValue(driver);
+    sh.getRange(row, ST_SIGN).setValue(driver ? 'ja' : '').setHorizontalAlignment('center');
+    SpreadsheetApp.flush();
+    try {
+      const t = sh.getRange(row, 4, 1, 2).getValues()[0];
+      const hm = d => (d instanceof Date ? Utilities.formatDate(d, SYNC_TZ, 'dd.MM. HH:mm') : '');
+      if (discordUrl_()) discordSend_(driver ? '📝 **' + driver + '** übernimmt Stint ' + v[0] + ' (' + hm(t[0]) + '–' + hm(t[1]).slice(-5) + ') – ' + sh.getName()
+        : '↩️ **' + me + '** gibt Stint ' + v[0] + ' ab – ' + sh.getName() + ' (noch offen)');
+    } catch (e) { console.error(e); }
+  } finally { lock.releaseLock(); }
+  return stintsData_(evName, me || driver);
+}
+
+/** Webseite: ?api=stints[&event=…][&do=set&row=…&driver=…&as=…] (ohne Anmeldung – Vertrauen im Team) */
+function stintsApi_(p) {
+  try {
+    if (p.do === 'set') return stintSet_(p.event, p.row, p.driver || '', p.as || p.driver || '');
+    return stintsData_(p.event, p.as || '');
+  } catch (e) { const d = stintsData_(p.event, p.as || ''); d.err = String(e.message || e); return d; }
 }
 
 /* ======================= Ist-Zeiten in den Plan-Tab ======================= */
@@ -1548,6 +1641,19 @@ function adminRcEvent(idOrUrl) {
 function syncDoGet_(e) {
   const p = (e && e.parameter) || {};
   if (p.api === 'release') return lmuReleaseServe_(p);
+  if (p.api === 'stints') {
+    const cbS = /^[\w.$]+$/.test(p.callback || '') ? p.callback : '';
+    const dS = stintsApi_(p);
+    return cbS ? ContentService.createTextOutput(cbS + '(' + JSON.stringify(dS) + ')').setMimeType(ContentService.MimeType.JAVASCRIPT)
+      : ContentService.createTextOutput(JSON.stringify(dS)).setMimeType(ContentService.MimeType.JSON);
+  }
+  if (p.view === 'stints') {
+    const t = lmuTpl_('Stints');
+    t.apiUrl = ScriptApp.getService().getUrl();
+    t.team = SpreadsheetApp.getActiveSpreadsheet().getName();
+    return t.evaluate().setTitle('Stint-Anmeldung · LMU Stint-Sync')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
+  }
   if (p.api === 'maplist' || p.api === 'maptrace') {
     const cb0 = /^[\w.$]+$/.test(p.callback || '') ? p.callback : 'callback';
     const d0 = p.api === 'maplist' ? mapList_() : mapTraces_(p.rows);

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<base target="_blank">
+<meta charset="utf-8">
+<style>
+  :root{--bg:#0e1116;--card:#171b22;--line:#262c36;--text:#e8ecf2;--mute:#8b95a5;--accent:#ff5a1f;--ok:#2fbf71;--warn:#f2b632;--bad:#e5484d}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  main{max-width:620px;margin:0 auto;padding:16px 16px 40px}
+  h1{font-size:20px;margin:2px 0 4px}
+  .small{font-size:13px;color:var(--mute)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .bar label{flex:1 1 180px;font-size:12px;color:var(--mute)}
+  select{width:100%;margin-top:3px;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+  .card.mine{border-color:var(--ok)}
+  .card.past{opacity:.55}
+  .nr{font-size:20px;font-weight:700;min-width:34px;text-align:center}
+  .mid{flex:1;min-width:0}
+  .t{font-weight:600}
+  .who{font-size:13px;margin-top:2px}
+  .who .sug{color:var(--warn)}
+  .who .me{color:var(--ok);font-weight:600}
+  .who .oth{color:var(--text)}
+  button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:9px 12px;cursor:pointer;background:var(--accent);color:#fff;white-space:nowrap}
+  button.sec{background:var(--line);color:var(--text)}
+  button:disabled{opacity:.5;cursor:default}
+  .sum{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:12px}
+  #msg{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);padding:9px 14px;border-radius:99px;font-weight:600;display:none;max-width:90%}
+  #msg.ok{display:block;background:var(--ok);color:#06210f}
+  #msg.err{display:block;background:var(--bad);color:#fff}
+</style>
+</head>
+<body>
+<main>
+  <div class="small">LMU Stint-Sync · <span id="team"></span></div>
+  <h1>📝 Stint-Anmeldung</h1>
+  <div class="small">Trag dich für die Stints ein, die du fahren willst. Die Zeiten im Plan rechnen sofort mit deiner Pace neu. Gelb = Vorschlag aus der Rotation, noch nicht bestätigt.</div>
+  <div class="bar">
+    <label>Ich bin<select id="me"><option value="">– Name wählen –</option></select></label>
+    <label>Event<select id="ev"></select></label>
+  </div>
+  <div id="sum" class="sum" style="display:none"></div>
+  <div id="list"><div class="small">lädt …</div></div>
+  <div class="small" style="margin-top:10px">Zeiten in deiner Ortszeit. Ändern kann der Team-Chef auch direkt im Event-Tab (Spalte G).</div>
+</main>
+<div id="msg"></div>
+<script>
+var API = <?!= JSON.stringify(apiUrl) ?>;
+var TEAM = <?!= JSON.stringify(team) ?>;
+var D = null, ME = '', EV = '', seq = 0;
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+try { ME = localStorage.getItem('lmuMe') || ''; } catch (e) { /* egal */ }
+$('team').textContent = TEAM || '';
+function msg(t, ok) { var m = $('msg'); m.textContent = t; m.className = ok ? 'ok' : 'err'; clearTimeout(msg.t); msg.t = setTimeout(function () { m.className = ''; }, 3000); }
+function call(params, done) {
+  var name = 'cb' + (++seq), s = document.createElement('script');
+  window[name] = function (d) { delete window[name]; s.remove(); done(d); };
+  var q = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
+  s.src = API + '?api=stints&' + q + '&callback=' + name + '&t=' + Date.now();
+  s.onerror = function () { msg('Keine Verbindung zum Sheet', false); };
+  document.body.appendChild(s);
+}
+function dt(ms, withDay) {
+  if (!ms) return '–';
+  var d = new Date(ms), o = { hour: '2-digit', minute: '2-digit' };
+  if (withDay) { o.weekday = 'short'; o.day = '2-digit'; o.month = '2-digit'; }
+  return d.toLocaleString('de-AT', o);
+}
+function mmss(s) { if (!s) return ''; var m = Math.floor(s / 60); return m + ':' + ('0' + (s - m * 60).toFixed(1)).slice(-4).replace('.', ','); }
+function hm(ms) { var m = Math.round(ms / 60000); return Math.floor(m / 60) + ':' + ('0' + m % 60).slice(-2); }
+function render(d) {
+  D = d; EV = d.event;
+  if (d.err) msg(d.err, false);
+  var meSel = $('me');
+  meSel.innerHTML = '<option value="">– Name wählen –</option>' + d.drivers.map(function (n) { return '<option' + (n === ME ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('');
+  $('ev').innerHTML = d.events.map(function (e) { return '<option value="' + esc(e.name) + '"' + (e.name === d.event ? ' selected' : '') + '>' + esc(e.name) + ' · ' + dt(e.race, true) + '</option>'; }).join('') || '<option value="">kein geplantes Event</option>';
+  if (!d.rows.length) { $('list').innerHTML = '<div class="small">' + (d.events.length ? 'Dieses Event hat noch keine Stints.' : 'Es ist gerade kein Event geplant.') + '</div>'; $('sum').style.display = 'none'; return; }
+  var mine = d.rows.filter(function (r) { return ME && r.driver === ME && r.signed; });
+  var tot = mine.reduce(function (a, r) { return a + (r.end && r.start ? r.end - r.start : 0); }, 0);
+  $('sum').style.display = ME ? '' : 'none';
+  $('sum').innerHTML = ME ? '<b>' + esc(ME) + '</b>: ' + mine.length + ' Stint' + (mine.length === 1 ? '' : 's') + ' angemeldet' + (tot ? ' · ' + hm(tot) + ' h Fahrzeit' : '') +
+    (mine.length ? ' (' + mine.map(function (r) { return '#' + r.nr; }).join(', ') + ')' : '') : '';
+  $('list').innerHTML = d.rows.map(function (r) {
+    var past = r.started || r.done, isMe = ME && r.driver === ME, who, btn = '';
+    if (past) who = '<span class="oth">' + (r.done ? 'gefahren' : 'läuft') + (r.ist ? ' – ' + esc(r.ist) : '') + '</span>';
+    else if (r.driver && r.signed) who = isMe ? '<span class="me">✓ Du</span>' : '<span class="oth">✓ ' + esc(r.driver) + '</span>';
+    else if (r.driver) who = '<span class="sug">Vorschlag: ' + esc(r.driver) + '</span>';
+    else who = '<span class="small">frei</span>';
+    if (!past && ME) {
+      if (isMe && r.signed) btn = '<button class="sec" data-row="' + r.row + '" data-take="0">Abgeben</button>';
+      else if (!r.signed || !r.driver) btn = '<button data-row="' + r.row + '" data-take="1">' + (isMe ? 'Bestätigen' : 'Übernehmen') + '</button>';
+    }
+    return '<div class="card' + (isMe && r.signed ? ' mine' : '') + (past ? ' past' : '') + '"><div class="nr">' + r.nr + '</div><div class="mid">' +
+      '<div class="t">' + dt(r.start, true) + ' – ' + dt(r.end) + '</div>' +
+      '<div class="small">' + (r.laps ? r.laps + ' Runden' : '') + (r.pace ? ' · Pace ' + mmss(r.pace) : '') + (r.start && r.end ? ' · ' + hm(r.end - r.start) + ' h' : '') + '</div>' +
+      '<div class="who">' + who + '</div></div>' + btn + '</div>';
+  }).join('');
+}
+$('list').onclick = function (e) {
+  var b = e.target.closest('button'); if (!b || !ME) return;
+  var take = b.getAttribute('data-take') === '1';
+  b.disabled = true;
+  call({ event: EV, do: 'set', row: b.getAttribute('data-row'), driver: take ? ME : '', as: ME }, function (d) {
+    render(d); if (!d.err) msg(take ? 'Eingetragen – Zeiten neu berechnet' : 'Abgegeben', true);
+  });
+};
+$('me').onchange = function () { ME = this.value; try { localStorage.setItem('lmuMe', ME); } catch (e) { /* egal */ } if (D) render(D); };
+$('ev').onchange = function () { call({ event: this.value, as: ME }, render); };
+call({ as: ME }, render);
+setInterval(function () { if (document.visibilityState === 'visible') call({ event: EV, as: ME }, render); }, 30000);
+</script>
+</body>
+</html>

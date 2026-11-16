@@ -133,7 +133,7 @@ function render(d) {
   $('url').textContent = d.url || 'noch nicht bereitgestellt – „Einrichtungs-Anleitung“ klicken';
   if (!INV_EDITED) $('invText').value = inviteText(d);
   $('links').innerHTML = d.url
-    ? '<a href="' + esc(d.url) + '">Plan-Dashboard</a> · <a href="' + esc(d.url) + '?view=live">Live-Dashboard</a> · <a href="' + esc(d.url) + '?view=box">Mechaniker-Board</a> · <a href="' + esc(d.url) + '?view=map">Strecken-Analyse</a>'
+    ? '<a href="' + esc(d.url) + '">Plan-Dashboard</a> · <a href="' + esc(d.url) + '?view=live">Live-Dashboard</a> · <a href="' + esc(d.url) + '?view=box">Mechaniker-Board</a> · <a href="' + esc(d.url) + '?view=map">Strecken-Analyse</a> · <a href="' + esc(d.url) + '?view=stints">Stint-Anmeldung</a>'
     : '';
   var p = d.plan || {};
   $('planInfo').textContent = p.row ? 'Aktuell wird Zeile ' + p.row + ' befüllt (' + (p.laps || 0) + ' Runden).'
@@ -186,7 +186,7 @@ function inviteText(d) {
     '1) exe laden: ' + GH + '/releases/latest/download/lmu-stint-sync.exe\n' +
     '2) In LMU: Einstellungen → Gameplay → „Enable Plugins“ an, LMU neu starten\n' +
     '3) exe starten → „Team hinzufügen“ → diesen Link einfügen:\n' + d.url + '\n\n' +
-    'Danach gebe ich dich frei.';
+    'Danach gebe ich dich frei. Für Stints eintragen: ' + d.url + '?view=stints';
 }
 function copyText(txt, ok) {
   var t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select();

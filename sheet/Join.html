@@ -50,6 +50,7 @@
   <div class="card">
     <h2>Und dann?</h2>
     <p>Der Team-Chef gibt dich frei – bis dahin wird alles, was du fährst, zwischengespeichert und nachgeschickt.</p>
+    <a class="btn" id="stints">Für Stints eintragen</a>
     <a class="btn sec" id="live">Live-Dashboard</a>
     <a class="btn sec" id="doc">Anleitung</a>
   </div>
@@ -65,6 +66,7 @@ $('dl').href = GH + '/releases/latest/download/lmu-stint-sync.exe';
 $('doc').href = GH + '/blob/main/docs/ANLEITUNG.md';
 $('link').textContent = API;
 $('live').href = API + '?view=live';
+$('stints').href = API + '?view=stints';
 $('toExe').href = 'http:' + '//127.0.0.1:8765/?sheet=' + encodeURIComponent(API) + '&team=' + encodeURIComponent(TEAM || '');
 function toast(t) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; setTimeout(function () { e.style.display = 'none'; }, 1800); }
 $('copy').onclick = function () {
