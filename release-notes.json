@@ -1,5 +1,15 @@
 [
  {
+  "v": "3.9",
+  "date": "16.11.2026",
+  "notes": [
+   "Stint-Anmeldung: Fahrer tragen sich vorab für Stints ein – auf der Seite …/exec?view=stints (auch am Handy) oder im exe-Fenster (ab exe 2.6.7)",
+   "Wer zuerst kommt, bekommt den Stint; die Zeiten im Plan rechnen sofort mit der Pace des Fahrers neu. Die Rotation aus dem Event-Dialog ist nur noch ein Vorschlag (gelb)",
+   "Event-Tab: neue Spalte Y „Angemeldet“; Discord-Meldung bei An- und Abmeldung",
+   "Einladung und Admin verlinken die Stint-Anmeldung"
+  ]
+ },
+ {
   "v": "3.8",
   "date": "16.11.2026",
   "notes": [
