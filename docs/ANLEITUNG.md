@@ -223,3 +223,8 @@ gleichzeitig, überschreibt sich nichts mehr.
 - **Übernehmen:** Wer zuerst kommt, bekommt den Stint. Ein Vorschlag aus der Rotation (gelb) kann jeder übernehmen; bestätigte Stints (✓) nur der Fahrer selbst abgeben. Gestartete Stints sind gesperrt.
 - Die Zeiten im Plan rechnen sofort mit der Pace des Fahrers neu (Events ab Sheet 3.8). Im Event-Tab steht der Fahrer in Spalte G, „ja“ in Spalte Y = selbst angemeldet. Der Team-Chef kann jederzeit direkt im Tab ändern.
 - Mit Discord-Webhook gibt es eine Meldung bei jeder An- und Abmeldung.
+
+## ADMIN-REITER & TEAMPASSWORT (Sheet 3.10)
+- Der Admin ist in Reiter aufgeteilt: **Fahrer** (Freigaben – rote Zahl = wartende Fahrer), **Events** (Events, Pace, Stint-Anmeldung), **Einladen**, **Einstellungen** (Automatik, Livestream, Discord) und **System** (Web-App-Link, Dashboards, Updates – rote Zahl = Update verfügbar).
+- **Teampasswort:** Admin → Events → „Stint-Anmeldung“ → Passwort eingeben → „Setzen“. Danach kann man auf der Webseite die Stints weiter ansehen, eintragen/abgeben aber nur mit Passwort (der Browser merkt es sich). „Ohne Passwort“ schaltet es wieder ab. Gespeichert wird nur ein Hash; nach 20 Fehlversuchen ist 10 Minuten Pause.
+- In der exe braucht es kein Passwort – das Gerät ist ohnehin beim Sheet angemeldet.
